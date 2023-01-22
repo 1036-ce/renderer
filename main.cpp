@@ -81,6 +81,38 @@ void triangle(vec3 *pts, float *zbuf, TGAImage &image, TGAColor color) {
 	}
 }
 
+void triangle(vec3 pts[3], float *zbuf, TGAImage &image, vec2 uv_coords[3], TGAImage &diffuse, float intensity) { 
+	int bbox_left   = std::min(pts[0].x, std::min(pts[1].x, pts[2].x));
+	int bbox_right  = std::max(pts[0].x, std::max(pts[1].x, pts[2].x));
+	int bbox_bottom = std::min(pts[0].y, std::min(pts[1].y, pts[2].y));
+	int bbox_top    = std::max(pts[0].y, std::max(pts[1].y, pts[2].y));
+	bbox_left   = std::max(0, bbox_left);
+	bbox_right  = std::min(image.width()  - 1, bbox_right);
+	bbox_bottom = std::max(0, bbox_bottom);
+	bbox_top    = std::min(image.height() - 1, bbox_top);
+
+	int width = image.width();
+	for (int x = bbox_left; x <= bbox_right; ++x) {
+		for (int y = bbox_bottom; y <= bbox_top; ++y) {
+			vec3 b = barycentric(pts, vec3(x, y, 0));
+			if (b.x < 0.0 || b.y < 0.0 || b.z < 0.0)
+				continue;
+			int z = 0;
+			for (int i = 0; i < 3; ++i)
+				z += b[i] * pts[i][2];
+			if (z > zbuf[x + y * width]) {
+				zbuf[x + y * width] = z;
+				vec2 uv;
+				uv[0] = b[0] * uv_coords[0][0] + b[1] * uv_coords[1][0] + b[2] * uv_coords[2][0];
+				uv[1] = b[0] * uv_coords[0][1] + b[1] * uv_coords[1][1] + b[2] * uv_coords[2][1];
+				TGAColor color = diffuse.get(uv[0] * diffuse.width(), uv[1] * diffuse.height());
+				for (int i = 3; i--; color[i] *= intensity);
+				image.set(x, y, color);
+			}
+		}
+	}
+}
+
 void triangle(const vec3 &v0, const vec3 &v1, const vec3 &v2, float *zbuf, TGAImage &image, TGAColor color) {
 	int bbox_left   = std::min(v0.x, std::min(v1.x, v2.x));
 	int bbox_right  = std::max(v0.x, std::max(v1.x, v2.x));
@@ -107,12 +139,14 @@ void triangle(const vec3 &v0, const vec3 &v1, const vec3 &v2, float *zbuf, TGAIm
 	}
 }
 
-int main() {
+void draw() {
 	Model *model = new Model("/home/zhaosiqi/workspace/Projects/renderer/obj/african_head/african_head.obj");
 
 	int width = 2000, height = 2000;
 	vec3 light_dir(0, 0, -1);
 	TGAImage image(width, height, TGAImage::RGB);
+	TGAImage diffuse = model->diffuse();
+	diffuse.flip_vertically();
 	float *zbuf = new float[width * height];
 	for (int i = width * height; i--; zbuf[i] = -std::numeric_limits<float>::max());
 	for (int i = 0; i < model->nfaces(); ++i) {
@@ -127,11 +161,19 @@ int main() {
 		}
 		vec3 n = cross(world_coords[2] - world_coords[0], world_coords[1] - world_coords[0]).normalize();
 		float intensity = n * light_dir;
+		vec2 uv[3];
+		for (int j = 0; j < 3; ++j)
+			uv[j] = model->uv(i, j);
 		if (intensity > 0)
-			triangle(screen_coords, zbuf, image, TGAColor(255 * intensity, 255 * intensity, 255 * intensity, 255));
+			triangle(screen_coords, zbuf, image, uv, diffuse, intensity);
+		// 	triangle(screen_coords, zbuf, image, TGAColor(255 * intensity, 255 * intensity, 255 * intensity, 255));
 	}
 	image.write_tga_file("output.tga");
 	system("convert output.tga output.png");
 	system("mv output.png /home/zhaosiqi/workspace/Projects/renderer");
+}
+
+int main() {
+	draw();
 	return 0;
 }

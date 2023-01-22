@@ -19,7 +19,7 @@ Model::Model(const std::string filename) {
 				iss >> v[i];
 			verts.push_back(v);
 		}
-		else if (!line.compare(0, 2, "vt ")) {
+		else if (!line.compare(0, 3, "vt ")) {
 			iss >> trash >> trash;
 			vec2 vt;
 			for (int i = 0; i < 2; ++i)
