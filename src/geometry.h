@@ -231,6 +231,9 @@ std::ostream& operator<<(std::ostream& out, const mat<nrows, ncols>& m) {
 	return out;
 }
 
+using mat4 = mat<4, 4>;
+using mat3 = mat<3, 3>;
+
 template<int n> struct dt 
 {
 	static double det(const mat<n, n>& m) {

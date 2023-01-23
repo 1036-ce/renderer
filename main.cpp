@@ -149,15 +149,23 @@ void draw() {
 	diffuse.flip_vertically();
 	float *zbuf = new float[width * height];
 	for (int i = width * height; i--; zbuf[i] = -std::numeric_limits<float>::max());
+
+	mat4 m = mat4::identity();
+	m[3][2] = -1.0 / 5.0;		// the camera in (0, 0, 5.0);
+
 	for (int i = 0; i < model->nfaces(); ++i) {
 		vec3 screen_coords[3];
 		vec3 world_coords[3];
 		for (int j = 0; j < 3; ++j) {
 			vec3 v = model->vert(i, j);
+			world_coords[j] = v;
+
+			vec4 v1 = embed<4, 3>(v, 1.0);
+			v1 = m * v1;
+			for (int i = 3; i--; v[i] = v1[i] / v1[3]);
 			screen_coords[j].x = width  * (v.x + 1.0) / 2.0;
 			screen_coords[j].y = height * (v.y + 1.0) / 2.0;
 			screen_coords[j].z = v.z;
-			world_coords[j] = v;
 		}
 		vec3 n = cross(world_coords[2] - world_coords[0], world_coords[1] - world_coords[0]).normalize();
 		float intensity = n * light_dir;
