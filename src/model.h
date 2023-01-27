@@ -25,8 +25,10 @@ public:
 	vec3 vert(const int i) const;
 	vec3 vert(const int iface, const int nthvert) const;
 	vec2 uv(const int iface, const int nthvert) const;
-	const TGAImage& diffuse()  const { return diffusemap; }
-	const TGAImage& specular() const { return specularmap; }
+	TGAColor diffuse(const vec2& uv) const;
+	TGAColor specular(const vec2& uv) const;
+	// const TGAImage& diffuse()  const { return diffusemap; }
+	// const TGAImage& specular() const { return specularmap; }
 private:
 	// load texture	
 	void load_texture(const std::string filename, const std::string suffix, TGAImage& img);

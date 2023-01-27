@@ -37,3 +37,25 @@ public:
 		// return intensity <= 0.0;
 	}
 };
+
+
+// Gouraud shading with texture
+class Shader : public IShader {
+public:
+	virtual vec4 vertex(int iface, int nthvert) {
+		varying_intensity[nthvert] = std::max(0.0, model->normal(iface, nthvert).normalize() * light_dir);
+		varying_uv.set_col(nthvert, model->uv(iface, nthvert));
+		vec4 gl_Vertex = embed<4>(model->vert(iface, nthvert));
+		return Viewport * Projection * ModelView * gl_Vertex;
+	}
+
+	virtual bool fragment(vec3 bar, TGAColor& color) {
+		float intensity = varying_intensity * bar;
+		vec2 frag_uv = varying_uv * bar;
+		color = model->diffuse(frag_uv);
+		return false;
+	}
+private:
+	vec3 varying_intensity;
+	mat<2, 3> varying_uv;
+};

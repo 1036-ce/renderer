@@ -13,95 +13,25 @@ mat4 ModelView;
 mat4 Projection;
 mat4 Viewport;
 
-class GouraudShader : public IShader {
+class Shader : public IShader {
 public:
-	vec3 varying_intensity;		// writen by vertex shader, read by fragment shader
-
 	virtual vec4 vertex(int iface, int nthvert) {
-		vec3 n = model->normal(iface, nthvert).normalize();
-		varying_intensity[nthvert] = std::max(0.0, n * light_dir); // get diffuse lighting intensity
-		vec4 gl_Vertex = embed<4>(model->vert(iface, nthvert));		// read the vertex from .obj file
-		return Viewport * Projection * ModelView * gl_Vertex;		// transform it to screen coordinates
-	}
-
-	virtual bool fragment(vec3 bar, TGAColor &color) {
-		float intensity = varying_intensity * bar;	// interpolate intensity for the current pixel
-		color = TGAColor(255, 255, 255) * intensity;
-		return false;		// don't discard the pixel;
-	}
-};
-
-class PhongShader : public IShader {
-public:
-	vec3 varying_normal[3];
-
-	virtual vec4 vertex(int iface, int nthvert) {
-		varying_normal[nthvert] = model->normal(iface, nthvert).normalize();
+		varying_intensity[nthvert] = std::max(0.0, model->normal(iface, nthvert).normalize() * light_dir);
+		varying_uv.set_col(nthvert, model->uv(iface, nthvert));
 		vec4 gl_Vertex = embed<4>(model->vert(iface, nthvert));
 		return Viewport * Projection * ModelView * gl_Vertex;
 	}
 
-	virtual bool fragment(vec3 bar, TGAColor &color) {
-		vec3 n(0, 0, 0);
-		for (int i = 0; i < 3; ++i)
-			n = n + (bar[i] * varying_normal[i]);
-		float intensity = n * light_dir;
-		color = TGAColor(255, 255, 255) * intensity;
+	virtual bool fragment(vec3 bar, TGAColor& color) {
+		float intensity = varying_intensity * bar;
+		vec2 frag_uv = varying_uv * bar;
+		color = model->diffuse(frag_uv);
 		return false;
-		// return intensity <= 0.0;
 	}
+private:
+	vec3 varying_intensity;
+	mat<2, 3> varying_uv;
 };
-
-void draw() {
-	Model *model = new Model("../obj/african_head/african_head.obj");
-
-	TGAImage image(width, height, TGAImage::RGB);
-	TGAImage zbuf(width, height, TGAImage::GRAYSCALE);
-
-	light_dir = light_dir.normalize();
-	mat4 mv = lookat(eye, center, up);
-	std::cout << "ModelView:" << std::endl;
-	std::cout << mv << std::endl;
-	mat4 pj = projection((eye - center).norm());
-	std::cout << "Projection:" << std::endl;
-	std::cout << pj << std::endl;
-	mat4 vp = viewport(width/8, height/8, width*3/4, height*3/4);
-	std::cout << "Viewport:" << std::endl;
-	std::cout << vp << std::endl;
-
-	std::cout << vp * pj * mv << std::endl;
-	for (int i = 0; i < model->nfaces(); ++i) {
-		vec3 screen_coords[3];
-		vec3 world_coords[3];
-		for (int j = 0; j < 3; ++j) {
-			vec3 v = model->vert(i, j);
-			world_coords[j] = v;
-
-			vec4 v1 = embed<4>(v, 1.0);
-			v1 = vp * pj * mv * v1;
-			for (int j = 3; j--; v[j] = v1[j] / v1[3]);
-			screen_coords[j].x = v.x;
-			screen_coords[j].y = v.y;
-			screen_coords[j].z = v.z;
-		}
-		// vec3 n = cross(world_coords[2] - world_coords[0], world_coords[1] - world_coords[0]).normalize();
-		// float intensity = n * light_dir;
-		float intensity[3];
-		for (int j = 0; j < 3; ++j) {
-			vec3 n = model->normal(i, j).normalize();
-			intensity[j] = std::max(0.0, n *  light_dir);
-		}
-		// if (intensity > 0)
-		triangle(screen_coords, zbuf, image, intensity);
-	}
-	image.write_tga_file("output.tga");
-	system("convert output.tga output.png");
-	system("mv output.png ../");
-	zbuf.write_tga_file("zbuf.tga");
-	system("convert zbuf.tga zbuf.png");
-	system("mv zbuf.png ../");
-}
-
 
 int main() {
 	model = new Model("../obj/african_head/african_head.obj");
@@ -109,7 +39,7 @@ int main() {
 	TGAImage image(width, height, TGAImage::RGB);
 	TGAImage zbuf(width, height, TGAImage::GRAYSCALE);
 	// PhongShader shader;
-	GouraudShader shader;
+	Shader shader;
 
 	light_dir.normalize();
 	ModelView = lookat(eye, center, up);

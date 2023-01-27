@@ -55,6 +55,7 @@ Model::Model(const std::string filename) {
 	load_texture(filename, "_diffuse.tga", 	  diffusemap );
 	load_texture(filename, "_nm_tangent.tga", normalmap  );
 	load_texture(filename, "_spec.tga", 	  specularmap);
+	diffusemap.flip_vertically();
 }
 
 int Model::nverts() const {
@@ -84,6 +85,14 @@ vec3 Model::vert(const int iface, const int nthvert) const {
 
 vec2 Model::uv(const int iface, const int nthvert) const {
 	return tex_coord[facet_tex[iface * 3 + nthvert]];
+}
+
+TGAColor Model::diffuse(const vec2 &uv) const {
+	return diffusemap.get(uv[0] * diffusemap.width(), uv[1] * diffusemap.height());
+}
+
+TGAColor Model::specular(const vec2 &uv) const {
+	return specularmap.get(uv[0] * specularmap.width(), uv[1] * specularmap.height());
 }
 
 void Model::load_texture(const std::string filename, const std::string suffix, TGAImage &img) {
