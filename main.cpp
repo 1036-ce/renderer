@@ -32,7 +32,7 @@ public:
 };
 
 void draw() {
-	Model *model = new Model("/home/zhaosiqi/workspace/Projects/renderer/obj/african_head/african_head.obj");
+	Model *model = new Model("../obj/african_head/african_head.obj");
 
 	TGAImage image(width, height, TGAImage::RGB);
 	TGAImage zbuf(width, height, TGAImage::GRAYSCALE);
@@ -75,15 +75,19 @@ void draw() {
 	}
 	image.write_tga_file("output.tga");
 	system("convert output.tga output.png");
-	system("mv output.png /home/zhaosiqi/workspace/Projects/renderer");
+	system("mv output.png ../");
 	zbuf.write_tga_file("zbuf.tga");
 	system("convert zbuf.tga zbuf.png");
-	system("mv zbuf.png /home/zhaosiqi/workspace/Projects/renderer");
+	system("mv zbuf.png ../");
 }
 
 
 int main() {
+<<<<<<< HEAD
 	model = new Model("/home/zhaosiqi/workspace/Projects/renderer/obj/african_head/african_head.obj");
+=======
+	Model *model = new Model("../obj/african_head/african_head.obj");
+>>>>>>> dev
 
 	TGAImage image(width, height, TGAImage::RGB);
 	TGAImage zbuf(width, height, TGAImage::GRAYSCALE);
@@ -100,7 +104,10 @@ int main() {
 	std::cout << "Viewport:" << std::endl;
 	std::cout << Viewport << std::endl;
 
+<<<<<<< HEAD
 	std::cout << Viewport * Projection * ModelView << std::endl;
+=======
+>>>>>>> dev
 	for (int i = 0; i < model->nfaces(); ++i) {
 		vec4 screen_coord[3];
 		for (int j = 0; j < 3; ++j) {
@@ -110,8 +117,13 @@ int main() {
 	}
 	image.write_tga_file("output.tga");
 	system("convert output.tga output.png");
-	system("mv output.png /home/zhaosiqi/workspace/Projects/renderer");
+	system("mv output.png ../");
 	zbuf.write_tga_file("zbuf.tga");
 	system("convert zbuf.tga zbuf.png");
+<<<<<<< HEAD
 	system("mv zbuf.png /home/zhaosiqi/workspace/Projects/renderer");
+=======
+	system("mv zbuf.png ../");
+	return 0;
+>>>>>>> dev
 }
