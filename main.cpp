@@ -5,7 +5,7 @@ const int width  = 800;
 const int height = 800;
 
 vec3 light_dir(1, 1, 1);
-vec3 eye(0, -1, 3);
+vec3 eye(2, 0, 3);
 vec3 center(0, 0, 0);
 vec3 up(0, 1, 0);
 
@@ -28,6 +28,27 @@ public:
 		float intensity = varying_intensity * bar;	// interpolate intensity for the current pixel
 		color = TGAColor(255, 255, 255) * intensity;
 		return false;		// don't discard the pixel;
+	}
+};
+
+class PhongShader : public IShader {
+public:
+	vec3 varying_normal[3];
+
+	virtual vec4 vertex(int iface, int nthvert) {
+		varying_normal[nthvert] = model->normal(iface, nthvert).normalize();
+		vec4 gl_Vertex = embed<4>(model->vert(iface, nthvert));
+		return Viewport * Projection * ModelView * gl_Vertex;
+	}
+
+	virtual bool fragment(vec3 bar, TGAColor &color) {
+		vec3 n(0, 0, 0);
+		for (int i = 0; i < 3; ++i)
+			n = n + (bar[i] * varying_normal[i]);
+		float intensity = n * light_dir;
+		color = TGAColor(255, 255, 255) * intensity;
+		return false;
+		// return intensity <= 0.0;
 	}
 };
 
@@ -87,15 +108,18 @@ int main() {
 
 	TGAImage image(width, height, TGAImage::RGB);
 	TGAImage zbuf(width, height, TGAImage::GRAYSCALE);
+	// PhongShader shader;
 	GouraudShader shader;
 
-	light_dir = light_dir.normalize();
+	light_dir.normalize();
 	ModelView = lookat(eye, center, up);
 	std::cout << "ModelView:" << std::endl;
 	std::cout << ModelView << std::endl;
+
 	Projection = projection((eye - center).norm());
 	std::cout << "Projection:" << std::endl;
 	std::cout << Projection << std::endl;
+
 	Viewport = viewport(width/8, height/8, width*3/4, height*3/4);
 	std::cout << "Viewport:" << std::endl;
 	std::cout << Viewport << std::endl;
