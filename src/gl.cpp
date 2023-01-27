@@ -82,17 +82,10 @@ vec3 barycentric(const vec3& v0, const vec3& v1, const vec3& v2, const vec3& p) 
 }
 
 void triangle(vec4 pts[3], IShader &shader, TGAImage &image, TGAImage &zbuffer) {
-<<<<<<< HEAD
 	int bbox_left   = std::min(pts[0].x/pts[0][3], std::min(pts[1].x/pts[1][3], pts[2].x/pts[2][3]));
 	int bbox_right  = std::max(pts[0].x/pts[0][3], std::max(pts[1].x/pts[1][3], pts[2].x/pts[2][3]));
 	int bbox_bottom = std::min(pts[0].y/pts[0][3], std::min(pts[1].y/pts[1][3], pts[2].y/pts[2][3]));
 	int bbox_top    = std::max(pts[0].y/pts[0][3], std::max(pts[1].y/pts[1][3], pts[2].y/pts[2][3]));
-=======
-	int bbox_left   = std::min(pts[0].x, std::min(pts[1].x, pts[2].x));
-	int bbox_right  = std::max(pts[0].x, std::max(pts[1].x, pts[2].x));
-	int bbox_bottom = std::min(pts[0].y, std::min(pts[1].y, pts[2].y));
-	int bbox_top    = std::max(pts[0].y, std::max(pts[1].y, pts[2].y));
->>>>>>> dev
 	bbox_left   = std::max(0, bbox_left);
 	bbox_right  = std::min(image.width()  - 1, bbox_right);
 	bbox_bottom = std::max(0, bbox_bottom);
