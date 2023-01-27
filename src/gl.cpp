@@ -81,11 +81,11 @@ vec3 barycentric(const vec3& v0, const vec3& v1, const vec3& v2, const vec3& p) 
 	return vec3(1 - u - v, u, v);
 }
 
-void triangle(vec4 screen_coord[3], IShader &shader, TGAImage &image, TGAImage &zbuffer) {
-	int bbox_left   = std::min(screen_coord[0].x, std::min(screen_coord[1].x, screen_coord[2].x));
-	int bbox_right  = std::max(screen_coord[0].x, std::max(screen_coord[1].x, screen_coord[2].x));
-	int bbox_bottom = std::min(screen_coord[0].y, std::min(screen_coord[1].y, screen_coord[2].y));
-	int bbox_top    = std::max(screen_coord[0].y, std::max(screen_coord[1].y, screen_coord[2].y));
+void triangle(vec4 pts[3], IShader &shader, TGAImage &image, TGAImage &zbuffer) {
+	int bbox_left   = std::min(pts[0].x, std::min(pts[1].x, pts[2].x));
+	int bbox_right  = std::max(pts[0].x, std::max(pts[1].x, pts[2].x));
+	int bbox_bottom = std::min(pts[0].y, std::min(pts[1].y, pts[2].y));
+	int bbox_top    = std::max(pts[0].y, std::max(pts[1].y, pts[2].y));
 	bbox_left   = std::max(0, bbox_left);
 	bbox_right  = std::min(image.width()  - 1, bbox_right);
 	bbox_bottom = std::max(0, bbox_bottom);
@@ -96,10 +96,10 @@ void triangle(vec4 screen_coord[3], IShader &shader, TGAImage &image, TGAImage &
 		for (int y = bbox_bottom; y <= bbox_top; ++y) {
 			vec3 tmp[3];
 			for (int i = 0; i < 3; ++i)
-				tmp[i] = proj<3>(screen_coord[i] / screen_coord[i][3]);
+				tmp[i] = proj<3>(pts[i] / pts[i][3]);
 			vec3 bar = barycentric(tmp, vec3(x, y, 0));
-			float z = screen_coord[0][2] * bar[0] + screen_coord[1][2] * bar[1] + screen_coord[2][2] * bar[2];
-			float w = screen_coord[0][3] * bar[0] + screen_coord[1][3] * bar[1] + screen_coord[2][3] * bar[2];
+			float z = pts[0][2] * bar[0] + pts[1][2] * bar[1] + pts[2][2] * bar[2];
+			float w = pts[0][3] * bar[0] + pts[1][3] * bar[1] + pts[2][3] * bar[2];
 			int frag_depth = std::max(0, std::min(255, int(z/w + 0.5)));
 			if (bar.x<0 || bar.y<0 || bar.z<0 || zbuffer.get(x, y)[0]>frag_depth)
 				continue;
