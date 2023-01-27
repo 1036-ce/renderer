@@ -83,22 +83,22 @@ void draw() {
 
 
 int main() {
-	Model *model = new Model("../obj/african_head/african_head.obj");
+	model = new Model("../obj/african_head/african_head.obj");
 
 	TGAImage image(width, height, TGAImage::RGB);
 	TGAImage zbuf(width, height, TGAImage::GRAYSCALE);
 	GouraudShader shader;
 
 	light_dir = light_dir.normalize();
-	mat4 mv = lookat(eye, center, up);
+	ModelView = lookat(eye, center, up);
 	std::cout << "ModelView:" << std::endl;
-	std::cout << mv << std::endl;
-	mat4 pj = projection((eye - center).norm());
+	std::cout << ModelView << std::endl;
+	Projection = projection((eye - center).norm());
 	std::cout << "Projection:" << std::endl;
-	std::cout << pj << std::endl;
-	mat4 vp = viewport(width/8, height/8, width*3/4, height*3/4);
+	std::cout << Projection << std::endl;
+	Viewport = viewport(width/8, height/8, width*3/4, height*3/4);
 	std::cout << "Viewport:" << std::endl;
-	std::cout << vp << std::endl;
+	std::cout << Viewport << std::endl;
 
 	for (int i = 0; i < model->nfaces(); ++i) {
 		vec4 screen_coord[3];
