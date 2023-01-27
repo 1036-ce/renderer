@@ -95,6 +95,31 @@ public:
 	vec & normalize() { *this = *this / norm(); return *this; }
 };
 
+template<> class vec<4>
+{
+public:
+	double x, y, z, w;
+	vec() = default;
+	vec(double x, double y, double z, double w): x(x), y(y), z(z), w(w) {}
+	double & operator[](const int i) {
+		 assert(i >= 0 && i < 4);  
+		 if (i == 0)	return x;
+		 else if (i == 1)	return y;
+		 else if (i == 2)	return z;
+		 else	return w;
+	 }
+	double 	 operator[](const int i) const { 
+		assert(i >= 0 && i < 4); 
+		 if (i == 0)	return x;
+		 else if (i == 1)	return y;
+		 else if (i == 2)	return z;
+		 else	return w;
+	}
+	double norm2() { return *this * *this; }
+	double norm()  { return std::sqrt(norm2()); }
+	vec & normalize() { *this = *this / norm(); return *this; }
+};
+
 using vec2 = vec<2>;
 using vec3 = vec<3>;
 using vec4 = vec<4>;

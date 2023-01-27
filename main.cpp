@@ -1,23 +1,54 @@
 #include "gl.h"
 
-const TGAColor white = TGAColor(255, 255, 255, 255);
-const TGAColor red   = TGAColor(255, 0,   0,   255);
-const TGAColor green = TGAColor(0  , 255, 0,   255);
+Model *model 	 = nullptr;
+const int width  = 800;
+const int height = 800;
+
+vec3 light_dir(1, 1, 1);
+vec3 eye(0, -1, 3);
+vec3 center(0, 0, 0);
+vec3 up(0, 1, 0);
+
+mat4 ModelView;
+mat4 Projection;
+mat4 Viewport;
+
+class GouraudShader : public IShader {
+public:
+	vec3 varying_intensity;		// writen by vertex shader, read by fragment shader
+
+	virtual vec4 vertex(int iface, int nthvert) {
+		vec3 n = model->normal(iface, nthvert).normalize();
+		varying_intensity[nthvert] = std::max(0.0, n * light_dir); // get diffuse lighting intensity
+		vec4 gl_Vertex = embed<4>(model->vert(iface, nthvert));		// read the vertex from .obj file
+		return Viewport * Projection * ModelView * gl_Vertex;		// transform it to screen coordinates
+	}
+
+	virtual bool fragment(vec3 bar, TGAColor &color) {
+		float intensity = varying_intensity * bar;	// interpolate intensity for the current pixel
+		color = TGAColor(255, 255, 255) * intensity;
+		return false;		// don't discard the pixel;
+	}
+};
 
 void draw() {
 	Model *model = new Model("/home/zhaosiqi/workspace/Projects/renderer/obj/african_head/african_head.obj");
 
-	int width = 2000, height = 2000;
-	vec3 light_dir(0, 0, -1);
 	TGAImage image(width, height, TGAImage::RGB);
-	TGAImage diffuse = model->diffuse();
-	diffuse.flip_vertically();
-	float *zbuf = new float[width * height];
-	for (int i = width * height; i--; zbuf[i] = -std::numeric_limits<float>::max());
+	TGAImage zbuf(width, height, TGAImage::GRAYSCALE);
 
-	mat4 m = mat4::identity();
-	m[3][2] = -1.0 / 5.0;		// the camera in (0, 0, 5.0);
+	light_dir.normalize();
+	mat4 mv = lookat(eye, center, up);
+	std::cout << "ModelView:" << std::endl;
+	std::cout << mv << std::endl;
+	mat4 pj = projection((eye - center).norm());
+	std::cout << "Projection:" << std::endl;
+	std::cout << pj << std::endl;
+	mat4 vp = viewport(width/8, height/8, width*3/4, height*3/4);
+	std::cout << "Viewport:" << std::endl;
+	std::cout << vp << std::endl;
 
+	std::cout << vp * pj * mv << std::endl;
 	for (int i = 0; i < model->nfaces(); ++i) {
 		vec3 screen_coords[3];
 		vec3 world_coords[3];
@@ -25,11 +56,11 @@ void draw() {
 			vec3 v = model->vert(i, j);
 			world_coords[j] = v;
 
-			vec4 v1 = embed<4, 3>(v, 1.0);
-			v1 = m * v1;
-			for (int i = 3; i--; v[i] = v1[i] / v1[3]);
-			screen_coords[j].x = width  * (v.x + 1.0) / 2.0;
-			screen_coords[j].y = height * (v.y + 1.0) / 2.0;
+			vec4 v1 = embed<4>(v, 1.0);
+			v1 = vp * pj * mv * v1;
+			for (int j = 3; j--; v[j] = v1[j] / v1[3]);
+			screen_coords[j].x = v.x;
+			screen_coords[j].y = v.y;
 			screen_coords[j].z = v.z;
 		}
 		vec3 n = cross(world_coords[2] - world_coords[0], world_coords[1] - world_coords[0]).normalize();
@@ -38,15 +69,64 @@ void draw() {
 		for (int j = 0; j < 3; ++j)
 			uv[j] = model->uv(i, j);
 		if (intensity > 0)
-			triangle(screen_coords, zbuf, image, uv, diffuse, intensity);
-		// 	triangle(screen_coords, zbuf, image, TGAColor(255 * intensity, 255 * intensity, 255 * intensity, 255));
+			triangle(screen_coords, zbuf, image, intensity);
 	}
 	image.write_tga_file("output.tga");
 	system("convert output.tga output.png");
 	system("mv output.png /home/zhaosiqi/workspace/Projects/renderer");
+	zbuf.write_tga_file("zbuf.tga");
+	system("convert zbuf.tga zbuf.png");
+	system("mv zbuf.png /home/zhaosiqi/workspace/Projects/renderer");
 }
 
+
 int main() {
-	draw();
+	Model *model = new Model("/home/zhaosiqi/workspace/Projects/renderer/obj/african_head/african_head.obj");
+
+	TGAImage image(width, height, TGAImage::RGB);
+	TGAImage zbuf(width, height, TGAImage::GRAYSCALE);
+
+	light_dir = light_dir.normalize();
+	mat4 mv = lookat(eye, center, up);
+	std::cout << "ModelView:" << std::endl;
+	std::cout << mv << std::endl;
+	mat4 pj = projection((eye - center).norm());
+	std::cout << "Projection:" << std::endl;
+	std::cout << pj << std::endl;
+	mat4 vp = viewport(width/8, height/8, width*3/4, height*3/4);
+	std::cout << "Viewport:" << std::endl;
+	std::cout << vp << std::endl;
+
+	std::cout << vp * pj * mv << std::endl;
+	for (int i = 0; i < model->nfaces(); ++i) {
+		vec3 screen_coords[3];
+		vec3 world_coords[3];
+		for (int j = 0; j < 3; ++j) {
+			vec3 v = model->vert(i, j);
+			world_coords[j] = v;
+
+			vec4 v1 = embed<4>(v, 1.0);
+			v1 = vp * pj * mv * v1;
+			for (int j = 3; j--; v[j] = v1[j] / v1[3]);
+			screen_coords[j].x = v.x;
+			screen_coords[j].y = v.y;
+			screen_coords[j].z = v.z;
+		}
+		// vec3 n = cross(world_coords[2] - world_coords[0], world_coords[1] - world_coords[0]).normalize();
+		// float intensity = n * light_dir;
+		float intensity[3];
+		for (int j = 0; j < 3; ++j) {
+			vec3 n = model->normal(i, j).normalize();
+			intensity[j] = std::max(0.0, n *  light_dir);
+		}
+		// if (intensity > 0)
+		triangle(screen_coords, zbuf, image, intensity);
+	}
+	image.write_tga_file("output.tga");
+	system("convert output.tga output.png");
+	system("mv output.png /home/zhaosiqi/workspace/Projects/renderer");
+	zbuf.write_tga_file("zbuf.tga");
+	system("convert zbuf.tga zbuf.png");
+	system("mv zbuf.png /home/zhaosiqi/workspace/Projects/renderer");
 	return 0;
 }

@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <vector>
 #include <fstream>
+#include <algorithm>
 
 #pragma pack(push, 1)
 struct TGAHeader
@@ -30,11 +31,22 @@ struct TGAColor
 	TGAColor(const std::uint8_t R, const std::uint8_t G, const std::uint8_t B, const std::uint8_t A = 255)
 		: bgra{B,G,R,A}, bytes_per_pixel(4) { }
 	TGAColor(const std::uint8_t *p, const std::uint8_t bytes_per_pixel) : bytes_per_pixel(bytes_per_pixel) {
-		for (int i = bytes_per_pixel; i--; bgra[i] = p[i]);
+		for (std::uint8_t i = 0; i < bytes_per_pixel; ++i)
+			bgra[i] = p[i];
 	}
+	TGAColor(const std::uint8_t v): bgra{v, 0, 0, 0}, bytes_per_pixel(1) { }
 
 	std::uint8_t& operator[](const int i) { return bgra[i]; }
+
+	TGAColor operator*(float intensity) const {
+		TGAColor res = *this;
+		intensity = std::clamp(intensity, 0.0f, 1.0f);
+		for (int i = 0; i < 4; ++i)
+			res.bgra[i] = bgra[i] * intensity;
+		return res;
+	}
 };
+
 
 class TGAImage
 {

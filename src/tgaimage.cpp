@@ -246,3 +246,4 @@ bool TGAImage::unload_rle_data(std::ofstream &out) const {
 	}
 	return true;
 }
+

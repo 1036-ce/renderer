@@ -66,7 +66,7 @@ int Model::nfaces() const {
 }
 
 vec3 Model::normal(const int iface, const int nthvert) const {
-	return norms[iface * 3 + nthvert];
+	return norms[facet_nrm[iface * 3 + nthvert]];
 }
 
 vec3 Model::normal(const vec2 &uv) const {
