@@ -52,10 +52,69 @@ public:
 	virtual bool fragment(vec3 bar, TGAColor& color) {
 		float intensity = varying_intensity * bar;
 		vec2 frag_uv = varying_uv * bar;
-		color = model->diffuse(frag_uv);
+		color = model->diffuse(frag_uv) * intensity;
 		return false;
 	}
 private:
 	vec3 varying_intensity;
+	mat<2, 3> varying_uv;
+};
+
+// diffuse and no specular
+class Shader : public IShader {
+public:
+	virtual vec4 vertex(int iface, int nthvert) {
+		varying_uv.set_col(nthvert, model->uv(iface, nthvert));
+		vec4 gl_Vertex = embed<4>(model->vert(iface, nthvert));
+		return Viewport * Projection * ModelView * gl_Vertex;
+	}
+
+	virtual bool fragment(vec3 bar, TGAColor& color) {
+		vec2 frag_uv = varying_uv * bar;
+		vec3 n = proj<3>(uniform_MIT * embed<4>(model->normal(frag_uv))).normalize();
+		vec3 l = proj<3>(uniform_M   * embed<4>(			 light_dir)).normalize();
+
+		float diff = std::max(0.0, n * l);
+		color = model->diffuse(frag_uv) * diff;
+		// color = model->diffuse(frag_uv);
+		
+		return false;
+	}
+
+	mat4 uniform_M;		// Projection * ModelView;
+	mat4 uniform_MIT;	// (Projection * ModelView).invert_transpose()
+private:
+	mat<2, 3> varying_uv;
+};
+
+// ambient and diffuse and specular
+class Shader : public IShader {
+public:
+	virtual vec4 vertex(int iface, int nthvert) {
+		varying_uv.set_col(nthvert, model->uv(iface, nthvert));
+		vec4 gl_Vertex = embed<4>(model->vert(iface, nthvert));
+		return Viewport * Projection * ModelView * gl_Vertex;
+	}
+
+	virtual bool fragment(vec3 bar, TGAColor& color) {
+		vec2 frag_uv = varying_uv * bar;
+		vec3 n = proj<3>(uniform_MIT * embed<4>(model->normal(frag_uv))).normalize();
+		vec3 l = proj<3>(uniform_M   * embed<4>(			 light_dir)).normalize();
+		vec3 r = reflect(n, l);
+
+		float spec = pow(std::max(0.0, r.z), model->specular(frag_uv));
+		float diff = std::max(0.0, n * l);
+		float tmp = model->specular(frag_uv);
+
+		TGAColor c = model->diffuse(frag_uv);
+		for (int i = 0; i < 3; ++i)
+			color[i] = std::min(5 + c[i] * (diff + 0.6 * spec), 255.0);
+
+		return false;
+	}
+
+	mat4 uniform_M;		// Projection * ModelView;
+	mat4 uniform_MIT;	// (Projection * ModelView).invert_transpose()
+private:
 	mat<2, 3> varying_uv;
 };

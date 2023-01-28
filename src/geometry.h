@@ -126,6 +126,15 @@ using vec4 = vec<4>;
 
 vec3 cross(const vec3& v1, const vec3& v2);
 
+/**
+ * @brief compute relfect vector
+ * 
+ * @param n should be normalized
+ * @param in should be normalized
+ * @return vec3 
+ */
+vec3 reflect(vec3& n, vec3& in);
+
 template<int n> struct dt;
 
 template<int nrows, int ncols> class mat
@@ -178,8 +187,7 @@ public:
 
 	mat<ncols, nrows> invert_transpose() const {
 		mat<ncols, nrows> ret = adjugate();
-		ret = ret / (ret[0] * rows[0]); 	// ret[0] * rows[0] == det(A)
-		return ret;	
+		return ret / (ret[0] * rows[0]); 	// ret[0] * rows[0] == det(A)
 	}
 
 	// 逆矩阵
@@ -263,7 +271,7 @@ template<int n> struct dt
 {
 	static double det(const mat<n, n>& m) {
 		double ret = 0;
-		for (int i = n; i--; ret += m[0][i] * m.cofactor(0, i));
+		for (int i = n; i--; ret += (m[0][i] * m.cofactor(0, i)) );
 		return ret;
 	}
 };

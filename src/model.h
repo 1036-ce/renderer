@@ -26,7 +26,7 @@ public:
 	vec3 vert(const int iface, const int nthvert) const;
 	vec2 uv(const int iface, const int nthvert) const;
 	TGAColor diffuse(const vec2& uv) const;
-	TGAColor specular(const vec2& uv) const;
+	float specular(const vec2& uv) const;
 	// const TGAImage& diffuse()  const { return diffusemap; }
 	// const TGAImage& specular() const { return specularmap; }
 private:
