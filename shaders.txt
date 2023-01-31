@@ -17,27 +17,24 @@ public:
 	}
 };
 
+// Phong shading
 class PhongShader : public IShader {
 public:
-	vec3 varying_normal[3];
+	mat3 varying_normal;
 
 	virtual vec4 vertex(int iface, int nthvert) {
-		varying_normal[nthvert] = model->normal(iface, nthvert).normalize();
+		varying_normal.set_col(nthvert, model->normal(iface, nthvert).normalize());
 		vec4 gl_Vertex = embed<4>(model->vert(iface, nthvert));
 		return Viewport * Projection * ModelView * gl_Vertex;
 	}
 
 	virtual bool fragment(vec3 bar, TGAColor &color) {
-		vec3 n(0, 0, 0);
-		for (int i = 0; i < 3; ++i)
-			n = n + (bar[i] * varying_normal[i]);
+		vec3 n = (varying_normal * bar).normalize();
 		float intensity = n * light_dir;
 		color = TGAColor(255, 255, 255) * intensity;
 		return false;
-		// return intensity <= 0.0;
 	}
 };
-
 
 // Gouraud shading with texture
 class Shader : public IShader {

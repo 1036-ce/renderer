@@ -97,7 +97,7 @@ void triangle(vec4 pts[3], IShader &shader, TGAImage &image, TGAImage &zbuffer) 
 			vec3 tmp[3];
 			for (int i = 0; i < 3; ++i)
 				tmp[i] = proj<3>(pts[i] / pts[i][3]);
-			vec3 bar = barycentric(tmp, vec3(x, y, 0));
+			vec3 bar = barycentric(tmp, vec3(x + 0.5, y + 0.5, 0));		// a center of pixel(x, y) is (x + 0.5, y + 0.5)
 			float z = pts[0][2] * bar[0] + pts[1][2] * bar[1] + pts[2][2] * bar[2];
 			float w = pts[0][3] * bar[0] + pts[1][3] * bar[1] + pts[2][3] * bar[2];
 			int frag_depth = std::max(0, std::min(255, int(z/w + 0.5)));

@@ -47,8 +47,11 @@ private:
 
 
 
-int main() {
-	model = new Model("../obj/african_head/african_head.obj");
+int main(int argc, char **argv) {
+	if (2 == argc)
+		model = new Model(argv[1]);
+	else
+		model = new Model("../obj/african_head/african_head.obj");
 
 	TGAImage image(width, height, TGAImage::RGB);
 	TGAImage zbuf(width, height, TGAImage::GRAYSCALE);
@@ -59,7 +62,6 @@ int main() {
 	Viewport = viewport(width/8, height/8, width*3/4, height*3/4);
 
 	Shader shader;
-	// GouraudShader shader;
 	shader.uniform_MIT = (Projection * ModelView).invert_transpose();
 	shader.uniform_M   = Projection * ModelView;
 
