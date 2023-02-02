@@ -50,21 +50,3 @@ vec3 barycentric(const vec3& v0, const vec3& v1, const vec3& v2, const vec3& p);
 void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color);
 
 void triangle(vec4 pts[3], IShader &shader, TGAImage &image, float *zbuffer);
-
-void triangle(vec4 screen_coord[3], IShader &shader, TGAImage &image, TGAImage &zbuffer);
-
-void triangle(vec3 *pts, TGAImage &image, TGAImage &zbuffer, TGAColor color);
-
-void triangle(vec3 *pts, float *zbuf, TGAImage &image, TGAColor color);
-
-void triangle(vec3 pts[3], float *zbuf, TGAImage &image, vec2 uv_coords[3], TGAImage &diffuse, float intensity); 
-
-void triangle(vec3 pts[3], TGAImage &zbuf, TGAImage &image, vec2 uv_coords[3], TGAImage &diffuse, float intensity); 
-
-void triangle(vec3 pts[3], TGAImage &zbuf, TGAImage &image, float intensity);
-
-void triangle(vec3 pts[3], TGAImage &zbuf, TGAImage &image, float intensity[3]);
-
-// void triangle(vec3 pts[3], float *zbuf, TGAImage &image, TGAColor colors[3]);
-
-void triangle(const vec3 &v0, const vec3 &v1, const vec3 &v2, float *zbuf, TGAImage &image, TGAColor color);
