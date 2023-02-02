@@ -6,13 +6,8 @@ const int height = 800;
 
 vec3 light_dir(1, 1, 1);
 vec3 eye(1, 1, 3);
-// vec3 eye(0, 0, 2);
 vec3 center(0, 0, 0);
 vec3 up(0, 1, 0);
-
-mat4 View;
-mat4 Projection;
-mat4 Viewport;
 
 
 class Shader : public IShader {
@@ -39,16 +34,19 @@ public:
 
 		vec3 n = calc_normal(bar);
 		vec3 l = light_dir.normalize();
-		vec3 r = reflect(n, -l);
 		vec3 v = (eye - frag_pos).normalize();
+		// vec3 r = reflect(n, -l);
+		vec3 r = (v + l).normalize();
 
-		float spec = pow(std::max(0.0, r * v), model->specular(frag_uv));
+		float spec = pow(std::max(0.0, r * n), model->specular(frag_uv));
+		// float spec = 0;
 		float diff = std::max(0.0, n * l);
 		float tmp = model->specular(frag_uv);
 
 		TGAColor c = model->diffuse(frag_uv);
-		for (int i = 0; i < 3; ++i)
+		for (int i = 0; i < 3; ++i) {
 			color[i] = std::min(5 + c[i] * (diff + 0.6 * spec), 255.0);
+		}
 
 		return false;
 	}
@@ -90,11 +88,6 @@ int main(int argc, char **argv) {
 	float *zbuf = new float[width * height];
 	for (int i = 0; i < width * height; ++i)
 		zbuf[i] = -std::numeric_limits<float>::max();
-
-	light_dir.normalize();
-	View = lookat(eye, center, up);
-	Projection = perspective(radius(45), (float)width / (float)height, -0.1, -100.0);
-	Viewport = viewport(0, 0, width, height);
 
 	mat4 model_mat = mat4::identity();
 	Shader shader;
