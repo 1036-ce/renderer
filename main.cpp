@@ -15,37 +15,6 @@ mat4 Projection;
 mat4 Viewport;
 
 
-class TShader : public IShader {
-public:
-	mat4 uniform_model;
-	mat4 uniform_view;
-	mat4 uniform_projection;
-	mat4 uniform_viewport;
-	mat4 uniform_MIT;
-
-	virtual vec4 vertex(int iface, int nthvert) {
-		varying_uv.set_col(nthvert, model->uv(iface, nthvert));
-		vec4 gl_Vertex = embed<4>(model->vert(iface, nthvert));
-		return uniform_viewport * uniform_projection * uniform_view * uniform_model * gl_Vertex;
-	}
-
-	virtual bool fragment(vec3 bar, TGAColor& color) {
-		vec2 frag_uv = varying_uv * bar;
-		// vec3 n = proj<3>(uniform_MIT * embed<4>(model->normal(frag_uv), 0.0)).normalize();
-		vec3 n = vec3(uniform_MIT * vec4(model->normal(frag_uv), 0.0)).normalize();
-		vec3 l = light_dir.normalize();
-
-		float diff = std::max(0.0, n * l);
-		// color = model->diffuse(frag_uv) * diff;
-		color = model->diffuse(frag_uv) *diff ;
-		
-		return false;
-	}
-
-private:
-	mat<2, 3> varying_uv;
-};
-
 class Shader : public IShader {
 public:
 	mat4 uniform_model;
@@ -53,18 +22,22 @@ public:
 	mat4 uniform_projection;
 	mat4 uniform_viewport;
 	mat4 uniform_MIT;
+
 	virtual vec4 vertex(int iface, int nthvert) {
 		varying_uv.set_col(nthvert, model->uv(iface, nthvert));
+		varying_normal.set_col(nthvert, model->normal(iface, nthvert));
 		vec4 gl_Vertex = embed<4>(model->vert(iface, nthvert));
-		varying_frag_pos.set_col(nthvert, uniform_model * gl_Vertex);
-		return uniform_viewport * uniform_projection * uniform_view * uniform_model * gl_Vertex;
+		gl_Vertex = uniform_model * gl_Vertex;
+		varying_frag_pos.set_col(nthvert, gl_Vertex);
+		varying_ndc_tri.set_col(nthvert, vec3(gl_Vertex / gl_Vertex[3]));
+		return uniform_viewport * uniform_projection * uniform_view * gl_Vertex;
 	}
 
 	virtual bool fragment(vec3 bar, TGAColor& color) {
 		vec2 frag_uv = varying_uv * bar;
 		vec3 frag_pos = vec3(varying_frag_pos * bar);
-		// vec3 n = proj<3>(uniform_MIT * embed<4>(model->normal(frag_uv))).normalize();
-		vec3 n = vec3(uniform_MIT * vec4(model->normal(frag_uv), 0.0)).normalize();
+
+		vec3 n = calc_normal(bar);
 		vec3 l = light_dir.normalize();
 		vec3 r = reflect(n, -l);
 		vec3 v = (eye - frag_pos).normalize();
@@ -80,9 +53,33 @@ public:
 		return false;
 	}
 
+
 private:
 	mat<2, 3> varying_uv;
 	mat<4, 3> varying_frag_pos;
+	mat<3, 3> varying_normal;
+	mat<3, 3> varying_ndc_tri;
+
+	// tangent space to world space
+	vec3 calc_normal(vec3 bar) {
+		vec2 frag_uv = varying_uv * bar;
+		vec3 bn = (varying_normal * bar).normalize();
+		mat3 A;
+		A[0] = varying_ndc_tri.col(1) - varying_ndc_tri.col(0);
+		A[1] = varying_ndc_tri.col(2) - varying_ndc_tri.col(0);
+		A[2] = bn;
+		A = A.invert();
+
+		vec3 i = A * vec3(varying_uv[0][1] - varying_uv[0][0], varying_uv[0][2] - varying_uv[0][0], 0);
+		vec3 j = A * vec3(varying_uv[1][1] - varying_uv[1][0], varying_uv[1][2] - varying_uv[1][0], 0);
+		mat3 B;
+		B.set_col(0, i.normalize());
+		B.set_col(1, j.normalize());
+		B.set_col(2, bn);
+
+		vec3 n = (B * model->normal(frag_uv)).normalize();
+		return n;
+	}
 };
 
 
@@ -99,9 +96,7 @@ int main(int argc, char **argv) {
 	Projection = perspective(radius(45), (float)width / (float)height, -0.1, -100.0);
 	Viewport = viewport(0, 0, width, height);
 
-	mat4 model_mat = translate(mat4::identity(), vec3(0, 0, -1));
-	model_mat = scale(model_mat, vec3(1, 1, 1));
-	model_mat = rotate(model_mat, radius(20), vec3(1, 1, 1));
+	mat4 model_mat = mat4::identity();
 	Shader shader;
 	shader.uniform_model = model_mat;
 	shader.uniform_view = lookat(eye, center, up);
