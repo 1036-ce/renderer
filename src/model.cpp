@@ -57,6 +57,7 @@ Model::Model(const std::string filename) {
 	load_texture(filename, "_spec.tga", 	  specularmap);
 	diffusemap.flip_vertically();
 	normalmap.flip_vertically();
+	specularmap.flip_vertically();
 }
 
 int Model::nverts() const {

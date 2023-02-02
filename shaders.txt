@@ -68,12 +68,11 @@ public:
 
 	virtual bool fragment(vec3 bar, TGAColor& color) {
 		vec2 frag_uv = varying_uv * bar;
-		vec3 n = proj<3>(uniform_MIT * embed<4>(model->normal(frag_uv))).normalize();
-		vec3 l = proj<3>(uniform_M   * embed<4>(			 light_dir)).normalize();
+		vec3 n = proj<3>(uniform_MIT * embed<4>(model->normal(frag_uv), 0.0)).normalize();
+		vec3 l = proj<3>(uniform_M   * embed<4>(light_dir,  0.0)).normalize();
 
 		float diff = std::max(0.0, n * l);
 		color = model->diffuse(frag_uv) * diff;
-		// color = model->diffuse(frag_uv);
 		
 		return false;
 	}

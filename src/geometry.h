@@ -21,13 +21,13 @@ template<int n> double operator*(const vec<n>& lhs, const vec<n>& rhs) {
 	return ret;
 }
 
-template<int n> vec<n> operator*(const vec<n>& lhs, const double rhs) {
+template<int n> vec<n> operator*(const vec<n>& lhs, const double& rhs) {
 	vec<n> ret = lhs;
 	for (int i = n; i--; ret[i] *= rhs);
 	return ret;
 }
 
-template<int n> vec<n> operator*(const double lhs, const vec<n>& rhs) {
+template<int n> vec<n> operator*(const double& lhs, const vec<n>& rhs) {
 	vec<n> ret = rhs;
 	for (int i = n; i--; ret[i] *= lhs);
 	return ret;
@@ -88,6 +88,7 @@ public:
 	double x, y, z;
 	vec() = default;
 	vec(double x, double y, double z): x(x), y(y), z(z) {}
+	vec(const vec<4>& v);
 	double & operator[](const int i) 	   { assert(i >= 0 && i < 3); return i ? (1 == i ? y : z) : x;}
 	double 	 operator[](const int i) const { assert(i >= 0 && i < 3); return i ? (1 == i ? y : z) : x;}
 	double norm2() { return *this * *this; }
@@ -101,6 +102,7 @@ public:
 	double x, y, z, w;
 	vec() = default;
 	vec(double x, double y, double z, double w): x(x), y(y), z(z), w(w) {}
+	vec(const vec<3> &v, double w_): x(v.x), y(v.y), z(v.z), w(w_) {}
 	double & operator[](const int i) {
 		 assert(i >= 0 && i < 4);  
 		 if (i == 0)	return x;
@@ -133,7 +135,7 @@ vec3 cross(const vec3& v1, const vec3& v2);
  * @param in should be normalized
  * @return vec3 
  */
-vec3 reflect(vec3& n, vec3& in);
+vec3 reflect(const vec3& n, const vec3& in);
 
 template<int n> struct dt;
 
@@ -283,3 +285,4 @@ template<> struct dt<1>
 	}
 };
 
+inline vec<3>::vec(const vec<4> &v): x(v.x), y(v.y), z(v.z) {}
