@@ -1,17 +1,14 @@
 #include "tgaimage.h"
 #include "model.h"
 
+mat4 translate(const mat4& m, const vec3& v);
+
+mat4 rotate(const mat4& m, const float& angle, const vec3& v);
+
+mat4 scale(const mat4& m, const vec3& v);
+
 // return View matrix
 mat4 lookat(vec3 eye, vec3 center, vec3 up);
-/**
- * @brief 
- * return projection matrix
- * 
- * @param distance : The distance between eye and center
- * @return mat4 
- */
-
-mat4 projection(float distance);
 
 /**
  * we use right-hand coord, so '0>near>far'
@@ -27,7 +24,6 @@ mat4 perspective(float fovY, float aspect, double near, double far);
 mat4 viewport(int x, int y, int w, int h);
 
 float radius(float angle);
-
 
 class IShader {
 public:

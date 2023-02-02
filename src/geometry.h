@@ -77,9 +77,15 @@ public:
 	vec(double x, double y): x(x), y(y) {}
 	double & operator[](const int i)	   { assert(i == 0 || i == 1); return i == 0 ? x : y;}
 	double 	 operator[](const int i) const { assert(i == 0 || i == 1); return i == 0 ? x : y;}
-	double norm2() { return x * x + y * y; }
-	double norm()  { return std::sqrt(norm2()); }
-	vec & normalize() { *this = *this / norm(); return *this; }
+	vec   operator-() { return vec(-x, -y); }
+	vec&  operator=(const vec& v) {
+		x = v.x;
+		y = v.y;
+		return *this;
+	}
+	double norm2() const { return x * x + y * y; }
+	double norm()  const { return std::sqrt(norm2()); }
+	vec normalize() const { return *this / norm();}
 };
 
 template<> class vec<3>
@@ -91,9 +97,16 @@ public:
 	vec(const vec<4>& v);
 	double & operator[](const int i) 	   { assert(i >= 0 && i < 3); return i ? (1 == i ? y : z) : x;}
 	double 	 operator[](const int i) const { assert(i >= 0 && i < 3); return i ? (1 == i ? y : z) : x;}
-	double norm2() { return *this * *this; }
-	double norm()  { return std::sqrt(norm2()); }
-	vec & normalize() { *this = *this / norm(); return *this; }
+	vec   operator-() { return vec(-x, -y, -z); }
+	vec&  operator=(const vec& v) {
+		x = v.x;
+		y = v.y;
+		z = v.z;
+		return *this;
+	}
+	double norm2() const { return *this * *this; }
+	double norm()  const { return std::sqrt(norm2()); }
+	vec normalize() const { return *this / norm();}
 };
 
 template<> class vec<4>
@@ -117,9 +130,17 @@ public:
 		 else if (i == 2)	return z;
 		 else	return w;
 	}
-	double norm2() { return *this * *this; }
-	double norm()  { return std::sqrt(norm2()); }
-	vec & normalize() { *this = *this / norm(); return *this; }
+	vec   operator-() { return vec(-x, -y, -z, -w); }
+	vec&  operator=(const vec& v) {
+		x = v.x;
+		y = v.y;
+		z = v.z;
+		w = v.w;
+		return *this;
+	}
+	double norm2() const { return *this * *this; }
+	double norm()  const { return std::sqrt(norm2()); }
+	vec normalize() const { return *this / norm(); }
 };
 
 using vec2 = vec<2>;
@@ -155,6 +176,11 @@ public:
 		for (int i = nrows; i--; rows[i][idx] = v[i]);
 	}
 
+	/**
+	 * @brief return a identity matrix
+	 * 
+	 * @return mat<nrows, ncols> 
+	 */
 	static mat<nrows, ncols> identity() {
 		mat<nrows, ncols> ret;
 		for (int i = nrows; i--; )

@@ -1,28 +1,55 @@
 #include "gl.h"
 
+mat4 translate(const mat4 &m, const vec3 &v) {
+	mat4 ret = mat4::identity();
+	ret[0][3] = v.x;
+	ret[1][3] = v.y;
+	ret[2][3] = v.z;
+	return ret * m;
+}
+
+mat4 rotate(const mat4 &m, const float &angle, const vec3 &v) {
+	float s  = sin(angle);
+	float c = cos(angle);
+	vec3 axis = v.normalize();
+	vec3 tmp  = (1.0 - c) * axis;
+	mat4 ret = mat4::identity();
+
+	ret[0][0] = tmp[0] * axis[0] + c;
+	ret[0][1] = tmp[0] * axis[1] - s * axis[2];
+	ret[0][2] = tmp[0] * axis[2] + s * axis[1];
+
+	ret[1][0] = tmp[1] * axis[0] + s * axis[2];
+	ret[1][1] = tmp[1] * axis[1] + c;
+	ret[1][2] = tmp[1] * axis[2] - s * axis[0];
+
+	ret[2][0] = tmp[2] * axis[0] - s * axis[1];
+	ret[2][1] = tmp[2] * axis[1] + s * axis[0];
+	ret[2][2] = tmp[2] * axis[2] + c;
+	return ret * m;
+}
+
+mat4 scale(const mat4 &m, const vec3 &v) {
+	mat4 ret = mat4::identity();
+	ret[0][0] = v.x;
+	ret[1][1] = v.y;
+	ret[2][2] = v.z;
+	return ret * m;
+}
+
 mat4 lookat(vec3 eye, vec3 center, vec3 up) {
 	vec3 z = (eye - center).normalize();
 	vec3 x = cross(up, z).normalize();
 	// vec3 x = cross(z, up).normalize();
 	vec3 y = cross(z, x).normalize();
 
-	mat4 Minv = mat4::identity();
-	mat4 Tr = mat4::identity();
-	for (int i = 0; i < 3; ++i) {
-		Minv[0][i] = x[i];
-		Minv[1][i] = y[i];
-		Minv[2][i] = z[i];
-
-		Tr[i][3] = -eye[i];
-		// Tr[i][3] = -center[i];
-	}
-	return Minv*Tr;
-}
-
-mat4 projection(float distance) {
-	mat4 proj = mat4::identity();
-	proj[3][2] = -1.0 / distance;
-	return proj;
+	mat4 rotation = mat4::identity();
+	mat4 translation = mat4::identity();
+	rotation[0] = vec4(x, 0);
+	rotation[1] = vec4(y, 0);
+	rotation[2] = vec4(z, 0);
+	translation.set_col(3, vec4(-eye, 1));
+	return rotation*translation;
 }
 
 mat4 orthographic(double bottom, double top, double near, double far, double left, double right) {
@@ -45,8 +72,6 @@ mat4 perspective(float fovY, float aspect, double near, double far) {
 	float t = -tan(fovY * 0.5);
 	ret[0][0] = 1.0 / (t * aspect);
 	ret[1][1] = 1.0 / t;
-	// ret[2][2] = 1 + far / near;
-	// ret[2][3] = -far;
 	ret[2][2] = (near + far) / (near - far);
 	ret[2][3] = 2 * near * far / (far - near);
 	ret[3][2] = 1;

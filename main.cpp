@@ -57,7 +57,7 @@ public:
 		varying_uv.set_col(nthvert, model->uv(iface, nthvert));
 		vec4 gl_Vertex = embed<4>(model->vert(iface, nthvert));
 		varying_frag_pos.set_col(nthvert, uniform_model * gl_Vertex);
-		return uniform_viewport * uniform_projection * uniform_view * uniform_MIT * gl_Vertex;
+		return uniform_viewport * uniform_projection * uniform_view * uniform_model * gl_Vertex;
 	}
 
 	virtual bool fragment(vec3 bar, TGAColor& color) {
@@ -66,7 +66,7 @@ public:
 		// vec3 n = proj<3>(uniform_MIT * embed<4>(model->normal(frag_uv))).normalize();
 		vec3 n = vec3(uniform_MIT * vec4(model->normal(frag_uv), 0.0)).normalize();
 		vec3 l = light_dir.normalize();
-		vec3 r = reflect(n, -1.0 * l);
+		vec3 r = reflect(n, -l);
 		vec3 v = (eye - frag_pos).normalize();
 
 		float spec = pow(std::max(0.0, r * v), model->specular(frag_uv));
@@ -99,12 +99,15 @@ int main(int argc, char **argv) {
 	Projection = perspective(radius(45), (float)width / (float)height, -0.1, -100.0);
 	Viewport = viewport(0, 0, width, height);
 
+	mat4 model_mat = translate(mat4::identity(), vec3(0, 0, -1));
+	model_mat = scale(model_mat, vec3(1, 1, 1));
+	model_mat = rotate(model_mat, radius(20), vec3(1, 1, 1));
 	Shader shader;
-	shader.uniform_model = mat4::identity();
+	shader.uniform_model = model_mat;
 	shader.uniform_view = lookat(eye, center, up);
 	shader.uniform_projection = perspective(radius(45), (float)width / (float)height, -0.1, -100.0); 
 	shader.uniform_viewport = viewport(0, 0, width, height);
-	shader.uniform_MIT = (mat4::identity()).invert_transpose();
+	shader.uniform_MIT = model_mat.invert_transpose();
 
 	for (int i = 0; i < model->nfaces(); ++i) {
 		vec4 screen_coord[3];

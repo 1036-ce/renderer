@@ -5,5 +5,5 @@ vec3 cross(const vec3& v1, const vec3& v2) {
 }
 
 vec3 reflect(const vec3& n, const vec3& in) {
-	return (-1.0 * (2 * n * in) * n + in).normalize();
+	return ((-2 * n * in) * n + in).normalize();
 }
