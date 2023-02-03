@@ -156,6 +156,11 @@ int TGAImage::height() const {
 	return h;
 }
 
+void TGAImage::clear() {
+	for (auto& i: data)
+		i = 0;
+}
+
 bool TGAImage::load_rle_data(std::ifstream &in) {
 	size_t piexl_count = w * h;
 	size_t cur_pixel = 0;
