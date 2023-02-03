@@ -82,7 +82,10 @@ private:
 
 
 int main(int argc, char **argv) {
-	model = new Model("../obj/african_head/african_head.obj");
+	if (2 == argc)
+		model = new Model(argv[1]);
+	else
+		model = new Model("../obj/african_head/african_head.obj");
 
 	TGAImage image(width, height, TGAImage::RGB);
 	float *zbuf = new float[width * height];
@@ -108,6 +111,30 @@ int main(int argc, char **argv) {
 	system("convert output.tga output.png");
 	system("mv output.png ../");
 
+	// generate zbuf image
+	{
+		TGAImage z_image(width, height, TGAImage::GRAYSCALE);
+		float low = std::numeric_limits<float>::max();
+		float high = -low;
+		for (int i  = 0; i < width; ++i) {
+			for (int j = 0; j < height; ++j) {
+				if (zbuf[j * width + i] != -std::numeric_limits<float>::max()) {
+					low = std::min(low, zbuf[j * width + i]);
+					high = std::max(high, zbuf[j * width + i]);
+				}
+			}
+		}
+		for (int i  = 0; i < width; ++i) {
+			for (int j = 0; j < height; ++j) {
+				float alpha = 255 / (high - low);
+				float c = zbuf[j * width + i];
+				z_image.set(i, j, TGAColor(alpha * (c  - low)));
+			}
+		}
+		z_image.write_tga_file("zbuf.tga");
+		system("convert zbuf.tga zbuf.png");
+		system("mv zbuf.png ../");
+	}
 	delete model;
 	return 0;
 }
