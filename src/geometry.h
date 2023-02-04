@@ -15,9 +15,9 @@ private:
 	double data[n] = {0};
 };
 
-template<int n> double operator*(const vec<n>& lhs, const vec<n>& rhs) {
-	double ret = 0;
-	for (int i = n; i--; ret += lhs[i] * rhs[i]);
+template<int n> vec<n> operator*(const vec<n>& lhs, const vec<n>& rhs) {
+	vec<n> ret;
+	for (int i = n; i--; ret[i] = lhs[i] * rhs[i]);
 	return ret;
 }
 
@@ -104,7 +104,7 @@ public:
 		z = v.z;
 		return *this;
 	}
-	double norm2() const { return *this * *this; }
+	double norm2() const { return x * x + y * y + z * z; }
 	double norm()  const { return std::sqrt(norm2()); }
 	vec normalize() const { return *this / norm();}
 };
@@ -138,7 +138,7 @@ public:
 		w = v.w;
 		return *this;
 	}
-	double norm2() const { return *this * *this; }
+	double norm2() const { return x*x + y*y + z*z + w*w; }
 	double norm()  const { return std::sqrt(norm2()); }
 	vec normalize() const { return *this / norm(); }
 };
@@ -147,6 +147,9 @@ using vec2 = vec<2>;
 using vec3 = vec<3>;
 using vec4 = vec<4>;
 
+double dot(const vec2& v1, const vec2& v2);
+double dot(const vec3& v1, const vec3& v2);
+double dot(const vec4& v1, const vec4& v2);
 vec3 cross(const vec3& v1, const vec3& v2);
 
 /**
@@ -215,7 +218,7 @@ public:
 
 	mat<ncols, nrows> invert_transpose() const {
 		mat<ncols, nrows> ret = adjugate();
-		return ret / (ret[0] * rows[0]); 	// ret[0] * rows[0] == det(A)
+		return ret / (dot(ret[0], rows[0])); 	// dot(ret[0], rows[0]) == det(A)
 	}
 
 	// 逆矩阵
@@ -238,14 +241,14 @@ template<int R1, int C1, int C2>
 mat<R1,C2> operator*(const mat<R1, C1>& lhs, const mat<C1, C2>& rhs) {
 	mat<R1, C2> ret;
 	for (int i = R1; i--;)
-		for (int j = C2; j--; ret[i][j] = lhs[i] * rhs.col(j));
+		for (int j = C2; j--; ret[i][j] = dot(lhs[i], rhs.col(j)));
 	return ret;
 }
 
 template<int nrows, int ncols>
 vec<nrows> operator*(const mat<nrows, ncols>& lhs, const vec<ncols>& rhs) {
 	vec<nrows> ret;
-	for (int i = nrows; i--; ret[i] = lhs[i] * rhs);
+	for (int i = nrows; i--; ret[i] = dot(lhs[i], rhs));
 	return ret;
 }
 
