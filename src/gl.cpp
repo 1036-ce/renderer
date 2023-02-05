@@ -142,35 +142,55 @@ vec3 barycentric(const vec3& v0, const vec3& v1, const vec3& v2, const vec3& p) 
 	return vec3(1 - u - v, u, v);
 }
 
-void triangle(vec4 pts[3], IShader &shader, TGAImage &image, float *zbuffer) {
-	int bbox_left   = std::min(pts[0].x/pts[0].w, std::min(pts[1].x/pts[1].w, pts[2].x/pts[2].w));
-	int bbox_right  = std::max(pts[0].x/pts[0].w, std::max(pts[1].x/pts[1].w, pts[2].x/pts[2].w));
-	int bbox_bottom = std::min(pts[0].y/pts[0].w, std::min(pts[1].y/pts[1].w, pts[2].y/pts[2].w));
-	int bbox_top    = std::max(pts[0].y/pts[0].w, std::max(pts[1].y/pts[1].w, pts[2].y/pts[2].w));
+void triangle(vec4 pts[3], IShader &shader, const mat4& vp, float *zbuffer, TGAImage &image) {
+	// pts is clip space coord
+	// scoord is screen space coord 
+	vec4 scoord[3];		
+	vec3 tmp[3];
+
+	for (int i = 0; i < 3; ++i) {
+		scoord[i] = vp * pts[i];
+		scoord[i] = scoord[i] / scoord[i][3];	
+		tmp[i] = vec3(scoord[i] / scoord[i][3]);
+
+		// pts.xyz /= pts.w  pts.w = 1.0 / pts.w
+		double t = 1.0 / pts[i].w;
+		pts[i] = pts[i] / pts[i].w;
+		pts[i].w = t;
+	}
+
+	int bbox_left   = std::min(scoord[0].x, std::min(scoord[1].x, scoord[2].x));
+	int bbox_right  = std::max(scoord[0].x, std::max(scoord[1].x, scoord[2].x));
+	int bbox_bottom = std::min(scoord[0].y, std::min(scoord[1].y, scoord[2].y));
+	int bbox_top    = std::max(scoord[0].y, std::max(scoord[1].y, scoord[2].y));
 	bbox_left   = std::max(0, bbox_left);
 	bbox_right  = std::min(image.width()  - 1, bbox_right);
 	bbox_bottom = std::max(0, bbox_bottom);
 	bbox_top    = std::min(image.height() - 1, bbox_top);
 
-	vec3 tmp[3];
-	for (int i = 0; i < 3; ++i)
-		tmp[i] = proj<3>(pts[i] / pts[i][3]);
 	TGAColor color;
 	int width = image.width();
 	for (int x = bbox_left; x <= bbox_right; ++x) {
 		for (int y = bbox_bottom; y <= bbox_top; ++y) {
-			vec3 bar = barycentric(tmp, vec3(x + 0.5, y + 0.5, 0));		// a center of pixel(x, y) is (x + 0.5, y + 0.5)
-			float z = pts[0][2] * bar[0] + pts[1][2] * bar[1] + pts[2][2] * bar[2];
-			float w = pts[0][3] * bar[0] + pts[1][3] * bar[1] + pts[2][3] * bar[2];
-			float frag_depth = z/w;
-			if (bar.x<0 || bar.y<0 || bar.z<0 || zbuffer[y * width + x]>frag_depth)
+			vec3 bar = barycentric(tmp, vec3(x + 0.5, y + 0.5, 0));		// center of pixel(x, y) is (x + 0.5, y + 0.5)
+			if (bar.x<0 || bar.y<0 || bar.z<0)
 				continue;
-			// if (bar.x<0 || bar.y<0 || bar.z<0 || zbuffer.get(x, y)[0]>frag_depth)
-			// 	continue;
+
+			double z = pts[0].z * bar[0] + pts[1].z * bar[1] + pts[2].z * bar[2];	// clip space z-value
+			double w = pts[0].w * bar[0] + pts[1].w * bar[1] + pts[2].w * bar[2];	// view space z-value
+
+			if (z < -1.0 || z > 1.0 || z < zbuffer[y * width + x])
+				continue;
+
+			// convert to perspective correct barycentric
+			// bar[0] = z / z_a * bar[0]
+			// bar[1] = z / z_b * bar[1]
+			// bar[2] = z / z_c * bar[2]
+			bar = 1.0 / w * vec3(pts[0].w, pts[1].w, pts[2].w) * bar;
+
 			bool discard = shader.fragment(bar, color);
 			if (!discard) {
-				// zbuffer.set(x, y, TGAColor(frag_depth));
-				zbuffer[y * width + x] = frag_depth;
+				zbuffer[y * width + x] = z;
 				image.set(x, y, color);
 			}
 		}
@@ -178,9 +198,11 @@ void triangle(vec4 pts[3], IShader &shader, TGAImage &image, float *zbuffer) {
 
 }
 
-void get_zbuf_image(float *zbuf, int width, int height, TGAImage& image) {
+
+void get_zbuf_image(float *zbuf, TGAImage& image) {
 	float low = std::numeric_limits<float>::max();
 	float high = -low;
+	int width = image.width(), height = image.height();
 	for (int i = 0; i < width; ++i) {
 		for (int j = 0; j < height; ++j) {
 			if (zbuf[j * width + i] != -std::numeric_limits<float>::max()) {

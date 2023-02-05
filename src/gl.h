@@ -45,6 +45,6 @@ vec3 barycentric(const vec3& v0, const vec3& v1, const vec3& v2, const vec3& p);
 
 void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color);
 
-void triangle(vec4 pts[3], IShader &shader, TGAImage &image, float *zbuffer);
+void triangle(vec4 pts[3], IShader &shader, const mat4& vp, float *zbuffer, TGAImage &image);
 
-void get_zbuf_image(float *zbuf, int width, int height, TGAImage& image);
+void get_zbuf_image(float *zbuf, TGAImage& image);
