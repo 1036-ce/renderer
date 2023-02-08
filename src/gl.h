@@ -1,5 +1,6 @@
 #include "tgaimage.h"
 #include "model.h"
+#include "buffer.h"
 
 mat4 translate(const mat4& m, const vec3& v);
 
@@ -44,6 +45,8 @@ vec3 barycentric(vec3 *pts, vec3 p);
 vec3 barycentric(const vec3& v0, const vec3& v1, const vec3& v2, const vec3& p);
 
 void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color);
+
+void triangle(vec4 pts[3], IShader &shader, const mat4& vp, float *zbuffer, Buffer<TGAColor> &color_buf);
 
 void triangle(vec4 pts[3], IShader &shader, const mat4& vp, float *zbuffer, TGAImage &image);
 

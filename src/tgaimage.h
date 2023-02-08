@@ -3,6 +3,7 @@
 #include <vector>
 #include <fstream>
 #include <algorithm>
+#include <cassert>
 
 #pragma pack(push, 1)
 struct TGAHeader
@@ -38,15 +39,13 @@ struct TGAColor
 
 	std::uint8_t& operator[](const int i) { return bgra[i]; }
 
-	TGAColor operator*(float intensity) const {
-		TGAColor res = *this;
-		intensity = std::clamp(intensity, 0.0f, 1.0f);
-		for (int i = 0; i < 4; ++i)
-			res.bgra[i] = bgra[i] * intensity;
-		return res;
-	}
 };
 
+
+TGAColor operator*(const TGAColor& c, float intensity);
+TGAColor operator+(const TGAColor& lhs, const TGAColor& rhs);
+//  {
+// }
 
 class TGAImage
 {

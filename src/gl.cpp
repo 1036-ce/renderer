@@ -1,3 +1,5 @@
+#include <vector>
+#include <utility>
 #include "gl.h"
 
 mat4 translate(const mat4 &m, const vec3 &v) {
@@ -114,6 +116,7 @@ void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) {
 	}
 }
 
+
 // 重心坐标
 // P = (1 - u - v)A + uB + vC
 // @return vec3(1-u-v, u, v);
@@ -121,8 +124,9 @@ vec3 barycentric(vec3 *pts, vec3 p) {
 	vec3 t1 = vec3(pts[1][0] - pts[0][0], pts[2][0] - pts[0][0], pts[0][0] - p[0]);
 	vec3 t2 = vec3(pts[1][1] - pts[0][1], pts[2][1] - pts[0][1], pts[0][1] - p[1]);
 	vec3 t = cross(t1, t2);
-	if (std::abs(t.z) < 1e-2)
+	if (std::abs(t.z) < 1e-3) {
 		return vec3(-1, 1, 1);
+	}
 	float u = t.x / t.z;
 	float v = t.y / t.z;
 	return vec3(1 - u - v, u, v);
@@ -135,11 +139,96 @@ vec3 barycentric(const vec3& v0, const vec3& v1, const vec3& v2, const vec3& p) 
 	vec3 t1 = vec3(v1.x - v0.x, v2.x - v0.x, v0.x - p.x);
 	vec3 t2 = vec3(v1.y - v0.y, v2.y - v0.y, v0.y - p.y);
 	vec3 t = cross(t1, t2);
-	if (std::abs(t.z) < 1e-2)	// is not a triangle
+	if (std::abs(t.z) < 1e-3)	// is not a triangle
 		return vec3(-1, 1, 1);
 	float u = t.x / t.z;
 	float v = t.y / t.z;
-	return vec3(1 - u - v, u, v);
+	return vec3(1.0 - u - v, u, v);
+}
+
+std::vector<int> msaa(vec3 pts[3], float x, float y, vec3& v) {
+	std::vector<std::pair<float, float>> offsets{
+		{0.25, 0.25},
+		{0.75, 0.25},
+		{0.25, 0.75},
+		{0.75, 0.75},
+	};
+	std::vector<int> ret;
+	vec3 bar;
+	for (int i = 0; i < 4; ++i) {
+		bar = barycentric(pts, vec3(x + offsets[i].first, y + offsets[i].second, 0));
+		if (bar.x>=0.0 && bar.y>=0.0 && bar.z>=0.0) {
+			v = bar;
+			ret.push_back(i);
+		}
+	}
+	return ret;
+}
+
+void triangle(vec4 pts[3], IShader &shader, const mat4 &vp, float *zbuffer, Buffer<TGAColor> &color_buf) {
+	// pts is clip space coord
+	// scoord is screen space coord 
+	vec4 scoord[3];		
+	vec3 tmp[3];
+
+	for (int i = 0; i < 3; ++i) {
+		scoord[i] = vp * pts[i];
+		scoord[i] = scoord[i] / scoord[i][3];	
+		tmp[i] = vec3(scoord[i]);
+
+		// pts.xyz /= pts.w  pts.w = 1.0 / pts.w
+		double t = 1.0 / pts[i].w;
+		pts[i] = pts[i] / pts[i].w;
+		pts[i].w = t;
+	}
+
+	int bbox_left   = std::min(scoord[0].x, std::min(scoord[1].x, scoord[2].x));
+	int bbox_right  = std::max(scoord[0].x, std::max(scoord[1].x, scoord[2].x));
+	int bbox_bottom = std::min(scoord[0].y, std::min(scoord[1].y, scoord[2].y));
+	int bbox_top    = std::max(scoord[0].y, std::max(scoord[1].y, scoord[2].y));
+	bbox_left   = std::max(0, bbox_left);
+	bbox_right  = std::min(color_buf.width()  - 1, bbox_right);
+	bbox_bottom = std::max(0, bbox_bottom);
+	bbox_top    = std::min(color_buf.height() - 1, bbox_top);
+
+	TGAColor color;
+	int width = color_buf.width();
+	for (int x = bbox_left; x <= bbox_right; ++x) {
+		for (int y = bbox_bottom; y <= bbox_top; ++y) {
+			vec3 t;
+			std::vector<int> v = msaa(tmp, x, y, t);
+			if (v.empty())
+				continue;
+
+			vec3 bar = barycentric(tmp, vec3(x + 0.5, y + 0.5, 0));		// center of pixel(x, y) is (x + 0.5, y + 0.5)
+
+			// if the center of pixel is not in triangle, we use simple dot's bar
+			if (bar.x<0 || bar.y<0 || bar.z<0)	
+				bar = t;
+
+			double z = pts[0].z * bar[0] + pts[1].z * bar[1] + pts[2].z * bar[2];	// clip space z-value
+			double w = pts[0].w * bar[0] + pts[1].w * bar[1] + pts[2].w * bar[2];	// view space 1.0/z-value
+
+			if (z < -1.0 || z > 1.0 || z < zbuffer[y * width + x])
+				continue;
+
+			// convert to perspective correct barycentric
+			// bar[0] = z / z_a * bar[0]
+			// bar[1] = z / z_b * bar[1]
+			// bar[2] = z / z_c * bar[2]
+			bar = 1.0 / w * vec3(pts[0].w, pts[1].w, pts[2].w) * bar;
+
+			bool discard = shader.fragment(bar, color);
+			if (!discard) {
+				zbuffer[y * width + x] = z;
+				for (int idx: v)
+					color_buf.set(x, y, idx, color);
+				// color_buf.set(x, y, 0, color);
+			}
+		}
+	}
+
+
 }
 
 void triangle(vec4 pts[3], IShader &shader, const mat4& vp, float *zbuffer, TGAImage &image) {
@@ -177,7 +266,7 @@ void triangle(vec4 pts[3], IShader &shader, const mat4& vp, float *zbuffer, TGAI
 				continue;
 
 			double z = pts[0].z * bar[0] + pts[1].z * bar[1] + pts[2].z * bar[2];	// clip space z-value
-			double w = pts[0].w * bar[0] + pts[1].w * bar[1] + pts[2].w * bar[2];	// view space z-value
+			double w = pts[0].w * bar[0] + pts[1].w * bar[1] + pts[2].w * bar[2];	// view space 1.0/z-value
 
 			if (z < -1.0 || z > 1.0 || z < zbuffer[y * width + x])
 				continue;

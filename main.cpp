@@ -1,5 +1,6 @@
 #include "gl.h"
 #include "camera.h"
+#include "buffer.h"
 
 Model *model 	 = nullptr;
 const int width  = 800;
@@ -29,10 +30,8 @@ public:
 	virtual bool fragment(vec3 bar, TGAColor& color) {
 		vec2 frag_uv = varying_uv * bar;
 
-		TGAColor c = model->diffuse(frag_uv);
-		for (int i = 0; i < 3; ++i) {
-			color[i] = c[i];
-		}
+		color = model->diffuse(frag_uv);
+		// color = TGAColor(123, 231, 12);
 
 		return false;
 	}
@@ -42,17 +41,18 @@ private:
 	mat<2, 3> varying_uv;
 };
 
-
 int main(int argc, char **argv) {
 	if (2 == argc)
 		model = new Model(argv[1]);
 	else {
-		// model = new Model("../obj/floor/floor.obj");
-		model = new Model("../obj/african_head/african_head.obj");
+		model = new Model("../obj/floor/floor.obj");
+		// model = new Model("../obj/triangle/triangle.obj");
+		// model = new Model("../obj/african_head/african_head.obj");
 	}
 
 	Camera camera(eye, center, up);
 	TGAImage image(width, height, TGAImage::RGB);
+	Buffer<TGAColor> color_buf(width, height, 4);
 	float *zbuf = new float[width * height];
 	for (int i = 0; i < width * height; ++i) {
 		zbuf[i] 	  = -std::numeric_limits<float>::max();
@@ -66,14 +66,22 @@ int main(int argc, char **argv) {
 	shader.uniform_projection = perspective(radius(45), (float)width / (float)height, -0.1, -100.0); 
 	shader.uniform_MIT = model_mat.invert_transpose();
 
+	mat4 vp = viewport(0, 0, width, height);
+
 	// draw model
 	for (int i = 0; i < model->nfaces(); ++i) {
 		vec4 clip_coord[3];
 		for (int j = 0; j < 3; ++j) {
 			clip_coord[j] = shader.vertex(i, j);
 		}
-		triangle(clip_coord, shader, viewport(0, 0, width, height), zbuf, image);
+		triangle(clip_coord, shader, vp, zbuf, color_buf);
 		// triangle(clip_coord, shader, image, zbuf);
+	}
+	for (int x = 0; x < width; ++x) {
+		for (int y = 0; y < height; ++y) {
+			TGAColor c = color_buf.get_value(x, y);
+			image.set(x, y, c);
+		}
 	}
 	image.write_tga_file("output.tga");
 	system("convert output.tga output.png");
