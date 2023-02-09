@@ -4,6 +4,7 @@
 #include <fstream>
 #include <algorithm>
 #include <cassert>
+#include "geometry.h"
 
 #pragma pack(push, 1)
 struct TGAHeader
@@ -60,6 +61,7 @@ public:
 	void flip_vertically();
 	TGAColor get(const int x, const int y) const;
 	void 	 set(const int x, const int y, const TGAColor& c);
+	template<int nrows, int ncols> TGAImage convolute(const mat<nrows, ncols>& m);
 	int width() const;
 	int height() const; 
 	void clear();
@@ -72,3 +74,7 @@ private:
 	int bpp = 0;	// bytes per pixel
 	std::vector<std::uint8_t> data = {};
 };
+
+template <int nrows, int ncols>
+inline TGAImage TGAImage::convolute(const mat<nrows, ncols> &m) {
+}

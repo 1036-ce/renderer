@@ -1,6 +1,7 @@
 #include "gl.h"
 #include "camera.h"
 #include "buffer.h"
+#include "triangle.h"
 
 Model *model 	 = nullptr;
 const int width  = 800;
@@ -46,13 +47,13 @@ int main(int argc, char **argv) {
 		model = new Model(argv[1]);
 	else {
 		model = new Model("../obj/floor/floor.obj");
-		// model = new Model("../obj/triangle/triangle.obj");
 		// model = new Model("../obj/african_head/african_head.obj");
 	}
 
 	Camera camera(eye, center, up);
 	TGAImage image(width, height, TGAImage::RGB);
-	Buffer<TGAColor> color_buf(width, height, 4);
+	ColorBuffer color_buf(width, height, TGAColor(), 1);
+	DepthBuffer depth_buf(width, height, -std::numeric_limits<float>::max(), 1);
 	float *zbuf = new float[width * height];
 	for (int i = 0; i < width * height; ++i) {
 		zbuf[i] 	  = -std::numeric_limits<float>::max();
@@ -74,8 +75,12 @@ int main(int argc, char **argv) {
 		for (int j = 0; j < 3; ++j) {
 			clip_coord[j] = shader.vertex(i, j);
 		}
-		triangle(clip_coord, shader, vp, zbuf, color_buf);
-		// triangle(clip_coord, shader, image, zbuf);
+		Triangle t(clip_coord);
+		t.draw(shader, vp, depth_buf, color_buf, Triangle::NOAA);
+		// triangle_msaa(clip_coord, shader, vp, depth_buf, color_buf);
+		// triangle_ssaa(clip_coord, shader, vp, depth_buf, color_buf);
+		// triangle(clip_coord, shader, vp, zbuf, color_buf);
+		// triangle(clip_coord, shader, vp, zbuf, image);
 	}
 	for (int x = 0; x < width; ++x) {
 		for (int y = 0; y < height; ++y) {

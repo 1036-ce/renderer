@@ -6,13 +6,14 @@
 template<typename T> class Buffer {
 public:
 	Buffer() = default;
-	Buffer(int width, int height, int simples = 1)
+	Buffer(int width, int height, T fill, int simples = 1)
 		: w(width), h(height), simples(simples), 
-		data(width * height, std::vector<T>(simples, T())) {}
+		data(width * height, std::vector<T>(simples, fill)) {}
 	T 	 get(int x, int y, int nthsimple);
 	void set(int x, int y, int nthsimple, T t);
 	// return average value in (x, y)
 	T    get_value(int x, int y);
+	int  simple_num() { return simples; }
 	int  width()  { return w; }
 	int  height() { return h; }
 private:
@@ -41,3 +42,6 @@ template <typename T> inline T Buffer<T>::get_value(int x, int y) {
 		ret = ret + t * (1.0 / simples);
 	return ret;
 }
+
+using DepthBuffer = Buffer<float>;
+using ColorBuffer = Buffer<TGAColor>;
