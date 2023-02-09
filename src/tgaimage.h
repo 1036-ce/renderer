@@ -61,6 +61,7 @@ public:
 	void flip_vertically();
 	TGAColor get(const int x, const int y) const;
 	void 	 set(const int x, const int y, const TGAColor& c);
+	// nrows and ncols should be odd number
 	template<int nrows, int ncols> TGAImage convolute(const mat<nrows, ncols>& m);
 	int width() const;
 	int height() const; 
@@ -77,4 +78,31 @@ private:
 
 template <int nrows, int ncols>
 inline TGAImage TGAImage::convolute(const mat<nrows, ncols> &m) {
+	int left   = ncols / 2, right = w - ncols + 1;
+	int bottom = nrows / 2, top = h - nrows + 1;
+
+	auto in_box = [&](int x, int y) -> bool {
+		return x>=left && x<=right && y>=bottom && y<=top;
+	};
+
+	TGAImage ret(w, h, bpp);
+
+	vec2 center(ncols / 2, nrows / 2);
+	for (int x = 0; x < w; ++x) {
+		for (int y = 0; y < h; ++y) {
+			if (!in_box(x, y))
+				ret.set(x, y, this->get(x, y));
+			else {
+				TGAColor tmp;
+				for (int i = 0; i < ncols; ++i) {
+					for (int j = 0; j < nrows; ++j) {
+						vec2 pos(x + i - center.x, y + j - center.y);
+						tmp = tmp + this->get(pos.x, pos.y) * m[i][j];
+					}
+				}
+				ret.set(x, y, tmp);
+			}
+		}
+	}
+	return ret;
 }

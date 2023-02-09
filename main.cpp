@@ -52,8 +52,8 @@ int main(int argc, char **argv) {
 
 	Camera camera(eye, center, up);
 	TGAImage image(width, height, TGAImage::RGB);
-	ColorBuffer color_buf(width, height, TGAColor(), 1);
-	DepthBuffer depth_buf(width, height, -std::numeric_limits<float>::max(), 1);
+	ColorBuffer color_buf(width, height, TGAColor(), 4);
+	DepthBuffer depth_buf(width, height, -std::numeric_limits<float>::max(), 4);
 	float *zbuf = new float[width * height];
 	for (int i = 0; i < width * height; ++i) {
 		zbuf[i] 	  = -std::numeric_limits<float>::max();
@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
 			clip_coord[j] = shader.vertex(i, j);
 		}
 		Triangle t(clip_coord);
-		t.draw(shader, vp, depth_buf, color_buf, Triangle::NOAA);
+		t.draw(shader, vp, depth_buf, color_buf, Triangle::MSAA4);
 		// triangle_msaa(clip_coord, shader, vp, depth_buf, color_buf);
 		// triangle_ssaa(clip_coord, shader, vp, depth_buf, color_buf);
 		// triangle(clip_coord, shader, vp, zbuf, color_buf);
@@ -88,6 +88,14 @@ int main(int argc, char **argv) {
 			image.set(x, y, c);
 		}
 	}
+
+	mat3 m1;
+	m1[0] = vec3(1, 1, 1);
+	m1[1] = vec3(1, 1, 1);
+	m1[1] = vec3(1, 1, 1);
+	m1 = (1.0 / 9) * m1;
+	// image = image.convolute(m1);
+
 	image.write_tga_file("output.tga");
 	system("convert output.tga output.png");
 	system("mv output.png ../");
