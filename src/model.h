@@ -3,6 +3,8 @@
 #include <string>
 #include "geometry.h"
 #include "tgaimage.h"
+#include "gl.h"
+#include "triangle.h"
 
 /**
  vertex : v {x} {y} {z} [w]	; w is optional and defaults to 1.0
@@ -18,6 +20,7 @@
 class Model {
 public:
 	Model(const std::string filename); 
+	void draw(IShader& shader, const mat4& vp, DepthBuffer& depth_buf, ColorBuffer& color_buf, Triangle::AA_Format aa_f = Triangle::NOAA);
 	int nverts() const;
 	int nfaces() const;
 	vec3 normal(const int iface, const int nthvert) const; 	// per triangle corner normal vertex

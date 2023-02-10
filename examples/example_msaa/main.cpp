@@ -2,6 +2,7 @@
 #include "camera.h"
 #include "buffer.h"
 #include "triangle.h"
+#include "model.h"
 
 Model *model 	 = nullptr;
 const int width  = 800;
@@ -62,14 +63,7 @@ int main(int argc, char **argv) {
 	mat4 vp = viewport(0, 0, width, height);
 
 	// draw model
-	for (int i = 0; i < model->nfaces(); ++i) {
-		vec4 clip_coord[3];
-		for (int j = 0; j < 3; ++j) {
-			clip_coord[j] = shader.vertex(i, j);
-		}
-		Triangle t(clip_coord);
-		t.draw(shader, vp, depth_buf, color_buf, Triangle::MSAA4);
-	}
+	model->draw(shader, vp, depth_buf, color_buf, Triangle::MSAA4);
 	for (int x = 0; x < width; ++x) {
 		for (int y = 0; y < height; ++y) {
 			TGAColor c = color_buf.get_value(x, y);

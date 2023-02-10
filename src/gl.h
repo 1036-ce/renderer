@@ -1,6 +1,5 @@
 #pragma once
 #include "tgaimage.h"
-#include "model.h"
 #include "buffer.h"
 
 class IShader {
