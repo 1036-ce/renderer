@@ -3,6 +3,14 @@
 #include "model.h"
 #include "buffer.h"
 
+class IShader {
+public:
+	virtual vec4 vertex(int iface, int nthvert) = 0;
+	virtual bool fragment(vec3 bar, TGAColor &color) = 0;
+	virtual ~IShader() = default;
+};
+
+
 mat4 translate(const mat4& m, const vec3& v);
 
 mat4 rotate(const mat4& m, const float& angle, const vec3& v);
@@ -27,32 +35,7 @@ mat4 viewport(int x, int y, int w, int h);
 
 float radius(float angle);
 
-class IShader {
-public:
-	virtual vec4 vertex(int iface, int nthvert) = 0;
-	virtual bool fragment(vec3 bar, TGAColor &color) = 0;
-	virtual ~IShader() = default;
-};
-
-
-// 重心坐标
-// P = (1 - u - v)A + uB + vC
-// @return vec3(1-u-v, u, v);
-vec3 barycentric(vec3 *pts, vec3 p);
-
-// 重心坐标
-// P = (1 - u - v)A + uB + vC
-// @return vec3(1-u-v, u, v);
-vec3 barycentric(const vec3& v0, const vec3& v1, const vec3& v2, const vec3& p);
 
 void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color);
-
-void triangle(vec4 pts[3], IShader &shader, const mat4& vp, float *zbuffer, Buffer<TGAColor> &color_buf);
-
-void triangle_msaa(vec4 pts[3], IShader & shader, const mat4 & vp,  DepthBuffer& zbuffer, ColorBuffer& color_buf);
-
-void triangle_ssaa(vec4 pts[3], IShader &shader, const mat4 &vp, DepthBuffer& zbuffer, ColorBuffer &color_buf);
-
-void triangle(vec4 pts[3], IShader &shader, const mat4& vp, float *zbuffer, TGAImage &image);
 
 void get_zbuf_image(float *zbuf, TGAImage& image);

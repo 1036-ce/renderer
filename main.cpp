@@ -47,6 +47,7 @@ int main(int argc, char **argv) {
 		model = new Model(argv[1]);
 	else {
 		model = new Model("../obj/floor/floor.obj");
+		// model = new Model("../obj/rabbit/rabbit.obj");
 		// model = new Model("../obj/african_head/african_head.obj");
 	}
 
@@ -54,11 +55,6 @@ int main(int argc, char **argv) {
 	TGAImage image(width, height, TGAImage::RGB);
 	ColorBuffer color_buf(width, height, TGAColor(), 4);
 	DepthBuffer depth_buf(width, height, -std::numeric_limits<float>::max(), 4);
-	float *zbuf = new float[width * height];
-	for (int i = 0; i < width * height; ++i) {
-		zbuf[i] 	  = -std::numeric_limits<float>::max();
-	}
-
 
 	Shader shader;
 	mat4 model_mat = mat4::identity();
@@ -77,10 +73,6 @@ int main(int argc, char **argv) {
 		}
 		Triangle t(clip_coord);
 		t.draw(shader, vp, depth_buf, color_buf, Triangle::MSAA4);
-		// triangle_msaa(clip_coord, shader, vp, depth_buf, color_buf);
-		// triangle_ssaa(clip_coord, shader, vp, depth_buf, color_buf);
-		// triangle(clip_coord, shader, vp, zbuf, color_buf);
-		// triangle(clip_coord, shader, vp, zbuf, image);
 	}
 	for (int x = 0; x < width; ++x) {
 		for (int y = 0; y < height; ++y) {
@@ -89,24 +81,11 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	mat3 m1;
-	m1[0] = vec3(1, 1, 1);
-	m1[1] = vec3(1, 1, 1);
-	m1[1] = vec3(1, 1, 1);
-	m1 = (1.0 / 9) * m1;
-	// image = image.convolute(m1);
 
 	image.write_tga_file("output.tga");
 	system("convert output.tga output.png");
 	system("mv output.png ../");
 
 	delete model;
-
-	TGAImage zimage(width, height, TGAImage::GRAYSCALE);
-	get_zbuf_image(zbuf, zimage);
-	zimage.write_tga_file("zimage.tga");
-	system("convert zimage.tga zimage.png");
-	system("mv zimage.png ../");
-
 	return 0;
 }
