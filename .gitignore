@@ -2,4 +2,5 @@
 build/
 obj/
 .cache/
+bin/
 *.png
