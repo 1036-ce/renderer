@@ -255,7 +255,7 @@ bool TGAImage::unload_rle_data(std::ofstream &out) const {
 TGAColor operator*(const TGAColor &c, float intensity) {
 	TGAColor ret;
 	intensity = std::clamp(intensity, 0.0f, 1.0f);
-	for (int i = 0; i < 4; ++i)
+	for (int i = 0; i < 3; ++i)
 		ret.bgra[i] = c.bgra[i] * intensity;
 	ret.bytes_per_pixel = c.bytes_per_pixel;
 	return ret;

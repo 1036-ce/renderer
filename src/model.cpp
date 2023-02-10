@@ -57,8 +57,25 @@ Model::Model(const std::string filename) {
 	load_texture(filename, "_nm_tangent.tga", normalmap  );		// here!
 	load_texture(filename, "_spec.tga", 	  specularmap);
 	diffusemap.flip_vertically();
+	mat3 m1;
+	m1[0] = vec3(1, 1, 1);
+	m1[1] = vec3(1, 1, 1);
+	m1[2] = vec3(1, 1, 1);
+	m1 = (1.0 / 9) * m1;
+	diffusemap = diffusemap.convolute(m1);
 	normalmap.flip_vertically();
 	specularmap.flip_vertically();
+}
+
+void Model::draw(IShader &shader, const mat4 &vp, DepthBuffer &depth_buf, ColorBuffer &color_buf, Triangle::AA_Format aa_f) {
+	for (int i = 0; i < nfaces(); ++i) {
+		vec4 clip_coord[3];
+		for (int j = 0; j < 3; ++j) {
+			clip_coord[j] = shader.vertex(i, j);
+		}
+		Triangle t(clip_coord);
+		t.draw(shader, vp, depth_buf, color_buf, Triangle::MSAA4);
+	}
 }
 
 int Model::nverts() const {
