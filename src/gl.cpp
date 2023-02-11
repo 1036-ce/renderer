@@ -95,6 +95,12 @@ mat4 viewport(int x, int y, int w, int h) {
 	return m;
 }
 
+TGAColor texture(TGAImage *simpler, const vec2 &uv) {
+	int x = simpler->width()  * uv.x;
+	int y = simpler->height() * uv.y;
+	return simpler->get(x, y);
+}
+
 void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) {
 	bool steep = false;
 	if (std::abs(x0 - x1) < std::abs(y0 - y1)) {
@@ -113,28 +119,5 @@ void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) {
 			image.set(y, x, color);
 		else
 			image.set(x, y, color);
-	}
-}
-
-
-
-void get_zbuf_image(float *zbuf, TGAImage& image) {
-	float low = std::numeric_limits<float>::max();
-	float high = -low;
-	int width = image.width(), height = image.height();
-	for (int i = 0; i < width; ++i) {
-		for (int j = 0; j < height; ++j) {
-			if (zbuf[j * width + i] != -std::numeric_limits<float>::max()) {
-				low = std::min(low, zbuf[j * width + i]);
-				high = std::max(high, zbuf[j * width + i]);
-			}
-		}
-	}
-	for (int i = 0; i < width; ++i) {
-		for (int j = 0; j < height; ++j) {
-			float alpha = 255 / (high - low);
-			float c = zbuf[j * width + i];
-			image.set(i, j, TGAColor(alpha * (c - low)));
-		}
 	}
 }

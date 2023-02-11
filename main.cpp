@@ -104,18 +104,19 @@ private:
 	}
 
 	float is_shadow(vec3& bar) {
+
 		vec3 p = varying_pos * bar;
 		vec4 p1 = uniform_shadow * vec4(p, 1.0);
-		float depth = (p1 / p1.w).z;
-		p1 = uniform_vp * p1;
-		int x = (int)(p1.x + 0.5);
-		int y = (int)(p1.y + 0.5);
+		p1 = p1 / p1.w;
+		float cur_depth = p1.z;
+		p1 = 0.5 * p1 + 0.5;
+		float closest_depth = texture(shadow_map, vec2(p1.x, p1.y))[0];
 
 		// shadow bias 
 		float bias = 0.05;
-		depth += bias;
-		depth = 127.5 * depth + 127.5;
-		return depth < shadow_map->get(x, y)[0] ? 1.0 : 0.0;
+		cur_depth += bias;
+		cur_depth = 127.5 * cur_depth + 127.5;
+		return cur_depth < closest_depth ? 1.0 : 0.0;
 	}
 };
 
@@ -129,14 +130,14 @@ int main(int argc, char **argv) {
 	floor_model = scale(floor_model, vec3(2, 2, 2));
 	floor_model = translate(floor_model, vec3(-1, 0, -1));
 	mat4 head_model = mat4::identity();
-	head_model = translate(head_model, vec3(0, -0.7, 0));
+	head_model = translate(head_model, vec3(0, -1.0, 0));
 
 	DepthBuffer depth_buf(width, height, -std::numeric_limits<float>::max(), 4);
 	TGAImage depth_map(width, height, TGAImage::GRAYSCALE);
 	DepthShader d_shader;
 	mat4 light_model = mat4::identity();
 	mat4 light_view  = lookat(vec3(1, 1, 1), center, up);
-	mat4 light_proj  = orthographic(-5.0, 5.0, -0.1, -10.0, -5.0, 5.0);
+	mat4 light_proj  = orthographic(-4.0, 4.0, -0.1, -10.0, -4.0, 4.0);
 	d_shader.uniform_view  = light_view;
 	d_shader.uniform_projection = light_proj;
 

@@ -32,9 +32,8 @@ mat4 perspective(float fovY, float aspect, double near, double far);
 
 mat4 viewport(int x, int y, int w, int h);
 
+TGAColor texture(TGAImage *simpler, const vec2& uv);
+
 float radius(float angle);
 
-
 void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color);
-
-void get_zbuf_image(float *zbuf, TGAImage& image);
