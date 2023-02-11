@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <string>
+#include <optional>
 #include "geometry.h"
 #include "tgaimage.h"
 #include "gl.h"
@@ -20,7 +21,8 @@
 class Model {
 public:
 	Model(const std::string filename); 
-	void draw(IShader& shader, const mat4& vp, DepthBuffer& depth_buf, ColorBuffer& color_buf, Triangle::AA_Format aa_f = Triangle::NOAA);
+	void draw(IShader& shader, const mat4& vp, DepthBuffer& depth_buf, 
+			  ColorBuffer *color_buf, Triangle::AA_Format aa_f = Triangle::NOAA);
 	int nverts() const;
 	int nfaces() const;
 	vec3 normal(const int iface, const int nthvert) const; 	// per triangle corner normal vertex

@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <cassert>
+#include <iostream>
 #include "tgaimage.h"
 
 template<typename T> class Buffer {
@@ -36,10 +37,13 @@ inline void Buffer<T>::set(int x, int y, int nthsimple, T t) {
 }
 
 template <typename T> inline T Buffer<T>::get_value(int x, int y) {
+	assert(x >= 0 && x < w);
+	assert(y >= 0 && y < h);
 	std::vector<T>& v = data[y * w + x];
 	T ret;
-	for (T &t: v)
+	for (T &t: v) {
 		ret = ret + t * (1.0 / simples);
+	}
 	return ret;
 }
 

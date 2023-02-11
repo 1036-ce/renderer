@@ -16,7 +16,8 @@ class Triangle
 {
 public:
 	enum AA_Format { NOAA, MSAA4, MSAA8, SSAA4 };
-	void draw(IShader& shader, const mat4 & vp, DepthBuffer& zbuf, ColorBuffer& color_buf, AA_Format aa_f = AA_Format::NOAA);
+	void draw(IShader& shader, const mat4 & vp, DepthBuffer& zbuf, 
+			  ColorBuffer* color_buf, AA_Format aa_f = AA_Format::NOAA);
 	Triangle() = default;
 	Triangle(vec4 pts[3]) { for (int i = 3; i--; verts[i] = pts[i]); }
 	Triangle(vec4 A, vec4 B, vec4 C) {

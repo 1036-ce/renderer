@@ -26,3 +26,4 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 
 # add_subdirectory(test)
 add_subdirectory(examples/example_msaa)
+add_subdirectory(examples/example_shadow)

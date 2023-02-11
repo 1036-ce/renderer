@@ -1,7 +1,8 @@
 #include <functional>
 #include "triangle.h"
 
-void Triangle::draw(IShader &shader, const mat4 &vp, DepthBuffer &zbuf, ColorBuffer &color_buf, AA_Format aa_f) {
+void Triangle::draw(IShader &shader, const mat4 &vp, DepthBuffer &zbuf, 
+					ColorBuffer* color_buf, AA_Format aa_f) {
 	for (int i = 0; i < 3; ++i) {
 		scoord[i] = vp * verts[i];
 		scoord[i] = scoord[i] / scoord[i][3];	
@@ -17,9 +18,9 @@ void Triangle::draw(IShader &shader, const mat4 &vp, DepthBuffer &zbuf, ColorBuf
 	int bbox_bottom = std::min(scoord[0].y, std::min(scoord[1].y, scoord[2].y));
 	int bbox_top    = std::max(scoord[0].y, std::max(scoord[1].y, scoord[2].y));
 	bbox_left   = std::max(0, bbox_left);
-	bbox_right  = std::min(color_buf.width()  - 1, bbox_right);
+	bbox_right  = std::min(zbuf.width()  - 1, bbox_right);
 	bbox_bottom = std::max(0, bbox_bottom);
-	bbox_top    = std::min(color_buf.height() - 1, bbox_top);
+	bbox_top    = std::min(zbuf.height() - 1, bbox_top);
 
 	using std::placeholders::_1;
 	using std::placeholders::_2;
@@ -27,19 +28,19 @@ void Triangle::draw(IShader &shader, const mat4 &vp, DepthBuffer &zbuf, ColorBuf
 	using Simpler = vector<tuple<int, depth_t, color_t>>(int, int, IShader&);
 	std::function<Simpler> simpler;
 	if (aa_f == AA_Format::NOAA) {
-		assert(color_buf.simple_num() == 1 && zbuf.simple_num() == 1);
+		assert(zbuf.simple_num() == 1);
 		simpler = std::bind(&Triangle::noaa, this, _1, _2, 1, _3);
 	}
 	else if (aa_f == AA_Format::MSAA4) {
-		assert(color_buf.simple_num() == 4 && zbuf.simple_num() == 4);
+		assert(zbuf.simple_num() == 4);
 		simpler = std::bind(&Triangle::msaa, this, _1, _2, 4, _3);
 	}
 	else if (aa_f == AA_Format::MSAA8) {
-		assert(color_buf.simple_num() == 8 && zbuf.simple_num() == 8);
+		assert(zbuf.simple_num() == 8);
 		simpler = std::bind(&Triangle::msaa, this, _1, _2, 8, _3);
 	}
 	else if (aa_f == AA_Format::SSAA4) {
-		assert(color_buf.simple_num() == 4 && zbuf.simple_num() == 4);
+		assert(zbuf.simple_num() == 4);
 		simpler = std::bind(&Triangle::ssaa, this, _1, _2, 4, _3);
 	}
 
@@ -53,7 +54,8 @@ void Triangle::draw(IShader &shader, const mat4 &vp, DepthBuffer &zbuf, ColorBuf
 				if (d >= -1.0 && d <= 1.0 && d > zbuf.get(x, y, idx)) {
 					color_t color = std::get<2>(pack[i]);
 					zbuf.set(x, y, idx, d);
-					color_buf.set(x, y, idx, color);
+					if (color_buf)
+						color_buf->set(x, y, idx, color);
 				}
 			}
 		}

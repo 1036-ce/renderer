@@ -50,8 +50,6 @@ int main(int argc, char **argv) {
 
 	Camera camera(eye, center, up);
 	TGAImage image(width, height, TGAImage::RGB);
-	ColorBuffer color_buf(width, height, TGAColor(0, 0, 0), 4);
-	DepthBuffer depth_buf(width, height, -std::numeric_limits<float>::max(), 4);
 
 	Shader shader;
 	mat4 model_mat = mat4::identity();
@@ -62,8 +60,10 @@ int main(int argc, char **argv) {
 
 	mat4 vp = viewport(0, 0, width, height);
 
+	ColorBuffer color_buf(width, height, TGAColor(0, 0, 0), 4);
+	DepthBuffer depth_buf(width, height, -std::numeric_limits<float>::max(), 4);
 	// draw model
-	model->draw(shader, vp, depth_buf, color_buf, Triangle::MSAA4);
+	model->draw(shader, vp, depth_buf, &color_buf, Triangle::MSAA4);
 	for (int x = 0; x < width; ++x) {
 		for (int y = 0; y < height; ++y) {
 			TGAColor c = color_buf.get_value(x, y);

@@ -67,14 +67,15 @@ Model::Model(const std::string filename) {
 	specularmap.flip_vertically();
 }
 
-void Model::draw(IShader &shader, const mat4 &vp, DepthBuffer &depth_buf, ColorBuffer &color_buf, Triangle::AA_Format aa_f) {
+void Model::draw(IShader &shader, const mat4 &vp, DepthBuffer &depth_buf, 
+				 ColorBuffer *color_buf, Triangle::AA_Format aa_f) {
 	for (int i = 0; i < nfaces(); ++i) {
 		vec4 clip_coord[3];
 		for (int j = 0; j < 3; ++j) {
 			clip_coord[j] = shader.vertex(i, j);
 		}
 		Triangle t(clip_coord);
-		t.draw(shader, vp, depth_buf, color_buf, Triangle::MSAA4);
+		t.draw(shader, vp, depth_buf, color_buf, aa_f);
 	}
 }
 
