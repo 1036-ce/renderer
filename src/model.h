@@ -37,6 +37,7 @@ public:
 private:
 	// load texture	
 	void load_texture(const std::string filename, const std::string suffix, TGAImage& img);
+	void gen_normal();
 
 	std::vector<vec3> verts{};		// array of vertices
 	std::vector<vec2> tex_coord{}; 	// per-vertex array of tex coords

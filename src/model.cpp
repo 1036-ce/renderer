@@ -76,6 +76,8 @@ Model::Model(const std::string filename) {
 			}
 		}
 	}
+	if (norms.size() == 0)
+		gen_normal();
 	in.close();
     std::cerr << "# v# " << nverts() << " f# "  << nfaces() << " vt# " << tex_coord.size() << " vn# " << norms.size() << std::endl;
 	load_texture(filename, "_diffuse.tga", 	  diffusemap );
@@ -148,4 +150,27 @@ void Model::load_texture(const std::string filename, const std::string suffix, T
 		return;
 	std::string texfile = filename.substr(0, dot) + suffix;
 	std::cerr << "texture file" << texfile << " loading " << (img.read_tga_file(texfile) ? "ok" : "failed") << std::endl;
+}
+
+void Model::gen_normal() {
+	// facet_nrm.assign(nverts(), 0);
+	facet_nrm = facet_vrt;
+	norms.assign(nverts(), vec3(0, 0, 0));
+	vec3 pts[3];
+	std::vector<float> tot_areas(nverts(), 0);
+	for (int i = 0; i < nfaces(); ++i) {
+		for (int j = 0; j < 3; ++j) {
+			pts[j] = vert(i, j);
+		}
+		float cur_area = area(pts);
+		vec3  cur_normal = cross(pts[1] - pts[0], pts[2] - pts[0]).normalize();
+		for (int j = 0; j < 3; ++j) {
+			int idx = facet_vrt[i * 3 + j];
+			tot_areas[idx] += cur_area;
+			norms[idx] = norms[idx] + cur_normal * cur_area;
+		}
+	}
+	for (int i = 0; i < nverts(); ++i) {
+		norms[i] = norms[i] / tot_areas[i];
+	}
 }

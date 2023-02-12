@@ -8,8 +8,8 @@
 const int width  = 800;
 const int height = 800;
 
-vec3 light_dir(1, 1, 1);
-vec3 eye(1, 1, 9);
+vec3 light_dir(-1, 1, 1);
+vec3 eye(1, 4, 12);
 vec3 center(0, 0, 0);
 vec3 up(0, 1, 0);
 
@@ -32,6 +32,29 @@ public:
 private:
 };
 
+class GouraudShader : public IShader {
+public:
+	Model *model;
+	mat4 uniform_model;
+	mat4 uniform_view;
+	mat4 uniform_proj;
+
+	virtual vec4 vertex(int iface, int nthvert) {
+		vec3 n = model->normal(iface, nthvert).normalize();
+		varying_intensity[nthvert] = std::max(0.0, dot(n, light_dir)); // get diffuse lighting intensity
+		vec4 gl_Vertex = vec4(model->vert(iface, nthvert), 1.0);		// read the vertex from .obj file
+		return uniform_proj * uniform_view * uniform_model * gl_Vertex;		// transform it to screen coordinates
+	}
+
+	virtual bool fragment(vec3 bar, TGAColor &color) {
+		float intensity = dot(varying_intensity, bar);	// interpolate intensity for the current pixel
+		color = TGAColor(255, 255, 255) * intensity;
+		return false;		// don't discard the pixel;
+	}
+private:
+	vec3 varying_intensity;		// writen by vertex shader, read by fragment shader
+};
+
 int main(int argc, char **argv) {
 	Model *rabbit = new Model("../obj/teapot/teapot.obj");
 	// Model *rabbit = new Model("../obj/rabbit/rabbit.obj");
@@ -46,7 +69,7 @@ int main(int argc, char **argv) {
 	mat4 rabbit_view  = camera.get_view_mat();
 	mat4 rabbit_proj  = perspective(radius(45), (float)width / (float)height, -0.1, -100.0);
 
-	Shader shader;
+	GouraudShader shader;
 	shader.model = rabbit;
 	shader.uniform_model = rabbit_model;
 	shader.uniform_view = rabbit_view;

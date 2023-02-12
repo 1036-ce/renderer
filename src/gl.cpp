@@ -86,6 +86,13 @@ float radius(float angle) {
 	return angle * 0.01745329251994329576923690768489;
 }
 
+float area(vec3 pts[3]) {
+	vec3 v1 = pts[1] - pts[0];
+	vec3 v2 = pts[2] - pts[0];
+	float ret = cross(v1, v2).norm();
+	return ret;
+}
+
 mat4 viewport(int x, int y, int w, int h) {
 	const double depth = 255.0;
 	mat4 m = mat4::identity();
