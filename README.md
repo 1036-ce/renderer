@@ -2,5 +2,5 @@
 
 ### TODO
 
-- [ ] shadow map
+- [x] shadow map
 - [ ] ambient occlusion

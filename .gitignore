@@ -2,5 +2,6 @@
 build/
 obj/
 bin/
+gallery/
 .cache/
 *.png

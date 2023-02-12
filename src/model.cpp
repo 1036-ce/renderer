@@ -8,6 +8,7 @@ Model::Model(const std::string filename) {
 	if (in.fail())
 		return;
 	std::string line;
+	std::string s;
 	while (!in.eof()) {
 		std::getline(in, line);
 		std::istringstream iss(line.c_str());
@@ -37,15 +38,40 @@ Model::Model(const std::string filename) {
 			iss >> trash;
 			int v, vt, vn;
 			int cnt = 0;
-			while (iss >> v >> trash >> vt >> trash >> vn) {
-				facet_vrt.push_back(--v);
-				facet_tex.push_back(--vt);
-				facet_nrm.push_back(--vn);
+
+			while (iss >> s) {
+				size_t p1 = s.find_first_of('/');
+				size_t p2 = s.find_last_of('/');
+				if (p1 + 1 < p2) {		// f v/vt/vn
+					v = std::stoi(s.substr(0, p1));
+					vt = std::stoi(s.substr(p1 + 1, p2 - p1 - 1));
+					vn = std::stoi(s.substr(p2 + 1, s.size() - p2 - 1));
+
+					facet_vrt.push_back(--v);
+					facet_tex.push_back(--vt);
+					facet_nrm.push_back(--vn);
+				} else if (p1 + 1 == p2) {		// f v//vn
+					v = std::stoi(s.substr(0, p1));
+					vn = std::stoi(s.substr(p2 + 1, s.size() - p2 - 1));
+
+					facet_vrt.push_back(--v);
+					facet_nrm.push_back(--vn);
+				} else if (p1 == p2 && p1 != std::string::npos) {	// f v/vt
+					v = std::stoi(s.substr(0, p1));
+					vt = std::stoi(s.substr(p2 + 1, s.size() - p2 - 1));
+
+					facet_vrt.push_back(--v);
+					facet_tex.push_back(--vt);
+				} else if (p1 == p2 && p1 == std::string::npos) {	// f v
+					v = std::stoi(s);
+					facet_vrt.push_back(--v);
+				}
 				++cnt;
 			}
+
 			if (3 != cnt) {
-				std::cerr << "Error: the obj file is supposed to be trangulated" << std::endl;
-				in.close();
+				std::cerr << "Error: the obj file is supposed to be trangulated" << std::endl; 
+				in.close(); 
 				return;
 			}
 		}
@@ -62,7 +88,7 @@ Model::Model(const std::string filename) {
 	m1[1] = vec3(1, 1, 1);
 	m1[2] = vec3(1, 1, 1);
 	m1 = (1.0 / 9) * m1;
-	diffusemap = diffusemap.convolute(m1);
+	diffusemap = diffusemap.convolute(m1);	// blur the diffuse map
 	normalmap.flip_vertically();
 	specularmap.flip_vertically();
 }
