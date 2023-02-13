@@ -36,6 +36,7 @@ TGAColor texture(TGAImage *simpler, const vec2& uv);
 
 float radius(float angle);
 
+// return the area of the triangle
 float area(vec3 pts[3]);
 
 void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color);

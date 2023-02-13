@@ -42,7 +42,7 @@ Model::Model(const std::string filename) {
 			while (iss >> s) {
 				size_t p1 = s.find_first_of('/');
 				size_t p2 = s.find_last_of('/');
-				if (p1 + 1 < p2) {		// f v/vt/vn
+				if (p1 + 1 < p2 && p1 != std::string::npos) {		// f v/vt/vn
 					v = std::stoi(s.substr(0, p1));
 					vt = std::stoi(s.substr(p1 + 1, p2 - p1 - 1));
 					vn = std::stoi(s.substr(p2 + 1, s.size() - p2 - 1));

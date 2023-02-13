@@ -1,21 +1,27 @@
 
 class GouraudShader : public IShader {
 public:
-	vec3 varying_intensity;		// writen by vertex shader, read by fragment shader
+	Model *model;
+	mat4 uniform_model;
+	mat4 uniform_view;
+	mat4 uniform_proj;
 
 	virtual vec4 vertex(int iface, int nthvert) {
 		vec3 n = model->normal(iface, nthvert).normalize();
-		varying_intensity[nthvert] = std::max(0.0, n * light_dir); // get diffuse lighting intensity
-		vec4 gl_Vertex = embed<4>(model->vert(iface, nthvert));		// read the vertex from .obj file
-		return Viewport * Projection * ModelView * gl_Vertex;		// transform it to screen coordinates
+		varying_intensity[nthvert] = std::max(0.0, dot(n, light_dir)); // get diffuse lighting intensity
+		vec4 gl_Vertex = vec4(model->vert(iface, nthvert), 1.0);		// read the vertex from .obj file
+		return uniform_proj * uniform_view * uniform_model * gl_Vertex;		// transform it to screen coordinates
 	}
 
 	virtual bool fragment(vec3 bar, TGAColor &color) {
-		float intensity = varying_intensity * bar;	// interpolate intensity for the current pixel
+		float intensity = dot(varying_intensity, bar);	// interpolate intensity for the current pixel
 		color = TGAColor(255, 255, 255) * intensity;
 		return false;		// don't discard the pixel;
 	}
+private:
+	vec3 varying_intensity;		// writen by vertex shader, read by fragment shader
 };
+
 
 // Phong shading
 class PhongShader : public IShader {

@@ -36,7 +36,7 @@ private:
 class Shader : public IShader {
 public:
 	Model *model = nullptr;
-	TGAImage *shadow_map;
+	TGAImage *uniform_shadow_map;
 	mat4 uniform_model;
 	mat4 uniform_view;
 	mat4 uniform_projection;
@@ -58,7 +58,7 @@ public:
 
 		float shadow = 0.3 + 0.7 * !is_shadow(bar);
 
-		vec3 n = calc_normal(bar);
+		vec3 n = tbn_normal(bar);
 		vec3 l = light_dir.normalize();
 		vec3 v = (eye - pos).normalize();
 		vec3 r = (v + l).normalize();
@@ -83,7 +83,7 @@ private:
 	mat<3, 3> varying_normal;
 
 	// tangent space to world space
-	vec3 calc_normal(vec3 bar) {
+	vec3 tbn_normal(vec3 bar) {
 		vec2 frag_uv = varying_uv * bar;
 		vec3 bn = (varying_normal * bar).normalize();
 		mat3 A;
@@ -110,7 +110,7 @@ private:
 		p1 = p1 / p1.w;
 		float cur_depth = p1.z;
 		p1 = 0.5 * p1 + 0.5;
-		float closest_depth = texture(shadow_map, vec2(p1.x, p1.y))[0];
+		float closest_depth = texture(uniform_shadow_map, vec2(p1.x, p1.y))[0];
 
 		// shadow bias 
 		float bias = 0.05;
@@ -138,6 +138,7 @@ int main(int argc, char **argv) {
 	mat4 light_model = mat4::identity();
 	mat4 light_view  = lookat(vec3(1, 1, 1), center, up);
 	mat4 light_proj  = orthographic(-4.0, 4.0, -0.1, -10.0, -4.0, 4.0);
+	// mat4 light_proj = perspective(radius(45), (float)width/(float)height, -0.1f, -10.0f);
 	d_shader.uniform_view  = light_view;
 	d_shader.uniform_projection = light_proj;
 
@@ -154,6 +155,8 @@ int main(int argc, char **argv) {
 
 		for (int i = 0; i < width; ++i) {
 			for (int j = 0; j < height; ++j) {
+				if (depth_buf.get_value(i, j) != -std::numeric_limits<float>::max())
+					std::cout << depth_buf.get_value(i, j) << std::endl;
 				uint8_t depth = 127.5 * depth_buf.get_value(i, j) + 127.5;
 				TGAColor c(depth);
 				depth_map.set(i, j, c);
@@ -177,7 +180,7 @@ int main(int argc, char **argv) {
 	shader.uniform_view = model_view;
 	shader.uniform_projection = model_proj;
 	shader.uniform_vp = vp;
-	shader.shadow_map = &depth_map;
+	shader.uniform_shadow_map = &depth_map;
 	shader.uniform_shadow = light_proj * light_view;
 
 	ColorBuffer color_buf = ColorBuffer(width, height, TGAColor(0, 0, 0), 4);
