@@ -56,7 +56,7 @@ public:
 		vec2 frag_uv = varying_uv * bar;
 		vec3 pos = vec3(varying_pos * bar);	// fragment position in world space
 
-		float shadow = 0.3 + 0.7 * !is_shadow(bar);
+		float shadow = 0.3 + 0.7 * !visibility(bar);
 
 		vec3 n = tbn_normal(bar);
 		vec3 l = light_dir.normalize();
@@ -103,7 +103,7 @@ private:
 		return n;
 	}
 
-	float is_shadow(vec3& bar) {
+	float visibility(vec3& bar) {
 
 		vec3 p = varying_pos * bar;
 		vec4 p1 = uniform_shadow * vec4(p, 1.0);

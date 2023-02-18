@@ -40,10 +40,12 @@ template <typename T> inline T Buffer<T>::get_value(int x, int y) {
 	assert(x >= 0 && x < w);
 	assert(y >= 0 && y < h);
 	std::vector<T>& v = data[y * w + x];
-	T ret;
-	for (T &t: v) {
-		ret = ret + t * (1.0 / simples);
-	}
+	T ret = v[0] * (1.0 / simples);
+	for (int i = 1; i < v.size(); ++i)
+		ret = ret + v[i] * (1.0 / simples);
+	// for (T &t: v) {
+	// 	ret = ret + t * (1.0 / simples);
+	// }
 	return ret;
 }
 

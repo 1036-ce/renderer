@@ -56,7 +56,7 @@ public:
 		vec2 frag_uv = varying_uv * bar;
 		vec3 pos = vec3(varying_pos * bar);	// fragment position in world space
 
-		float shadow = 0.3 + 0.7 * !is_shadow(bar);
+		float shadow = 0.3 + 0.7 *  visibility(bar);
 
 		vec3 n = tbn_normal(bar);
 		vec3 l = light_dir.normalize();
@@ -103,20 +103,26 @@ private:
 		return n;
 	}
 
-	float is_shadow(vec3& bar) {
+	float visibility(vec3& bar) {
 
 		vec3 p = varying_pos * bar;
 		vec4 p1 = uniform_shadow * vec4(p, 1.0);
 		p1 = p1 / p1.w;
 		float cur_depth = p1.z;
 		p1 = 0.5 * p1 + 0.5;
-		float closest_depth = texture(uniform_shadow_map, vec2(p1.x, p1.y))[0];
 
-		// shadow bias 
+		float visib = 0;
 		float bias = 0.05;
-		cur_depth += bias;
-		cur_depth = 127.5 * cur_depth + 127.5;
-		return cur_depth < closest_depth ? 1.0 : 0.0;
+		vec2 texel_size = vec2(1.0/uniform_shadow_map->width(), 1.0/uniform_shadow_map->height());
+		for (int x = -3; x <= 3; ++x) {
+			for (int y = -3; y <= 3; ++y) {
+				float pcf_depth = texture(uniform_shadow_map, vec2(p1.x, p1.y) + (vec2(x, y) * texel_size))[0];
+				float tmp = cur_depth + bias;
+				tmp = 127.5 * tmp + 127.5;
+				visib += tmp < pcf_depth ? 0.0 : 1.0;
+			}
+		}
+		return visib / 49.0;
 	}
 };
 
@@ -124,7 +130,6 @@ int main(int argc, char **argv) {
 	// Model *model = nullptr;
 	Model *head = new Model("../obj/african_head/african_head.obj");
 	Model *floor  = new Model("../obj/floor/floor.obj");
-	Model *window = new Model("../obj/window/window.obj");
 	mat4 vp = viewport(0, 0, width, height);
 
 	mat4 floor_model = mat4::identity();
@@ -132,8 +137,6 @@ int main(int argc, char **argv) {
 	floor_model = translate(floor_model, vec3(-1, 0, -1));
 	mat4 head_model = mat4::identity();
 	head_model = translate(head_model, vec3(0, -1.0, 0));
-	mat4 window_model = scale(mat4::identity(), vec3(0.3, 0.3, 0.3));
-	window_model = translate(window_model, vec3(0.6, 0.2, 4.1));
 
 	DepthBuffer depth_buf(width, height, -std::numeric_limits<float>::max(), 4);
 	TGAImage depth_map(width, height, TGAImage::GRAYSCALE);
@@ -156,10 +159,6 @@ int main(int argc, char **argv) {
 		d_shader.model = head;
 		head->draw(d_shader, vp, depth_buf, nullptr, Triangle::MSAA4);
 
-		d_shader.uniform_model = window_model;
-		d_shader.model = window;
-		window->draw(d_shader, vp, depth_buf, nullptr, Triangle::MSAA4);
-
 		for (int i = 0; i < width; ++i) {
 			for (int j = 0; j < height; ++j) {
 				uint8_t depth = 127.5 * depth_buf.get_value(i, j) + 127.5;
@@ -167,9 +166,14 @@ int main(int argc, char **argv) {
 				depth_map.set(i, j, c);
 			}
 		}
-		depth_map.write_tga_file("depth_map.tga");
-		system("convert depth_map.tga depth_map.png");
-		system("mv depth_map.png ../");
+		mat3 m;
+		m[0] = vec3(1, 1, 1);
+		m[1] = vec3(1, 1, 1);
+		m[2] = vec3(1, 1, 1);
+		// depth_map.convolute(1.0 / 9 * m);
+		depth_map.write_tga_file("shadow.tga");
+		system("convert shadow.tga shadow.png");
+		system("mv shadow.png ../");
 	}
 
 
@@ -200,23 +204,6 @@ int main(int argc, char **argv) {
 		shader.uniform_model = head_model;
 		shader.model = head;
 		head->draw(shader, vp, zbuf, &color_buf, Triangle::MSAA4);
-
-
-		for (int x = 0; x < width; ++x) {
-			for (int y = 0; y < height; ++y) {
-				TGAColor c = color_buf.get_value(x, y);
-				image.set(x, y, c);
-			}
-		}
-
-		image.write_tga_file("output1.tga");
-		system("convert output1.tga output1.png");
-		system("mv output1.png ../");
-
-		shader.uniform_model = window_model;
-		shader.model = window;
-		window->enable(GL_BLEND);
-		window->draw(shader, vp, zbuf, &color_buf, Triangle::MSAA4);
 
 		for (int x = 0; x < width; ++x) {
 			for (int y = 0; y < height; ++y) {

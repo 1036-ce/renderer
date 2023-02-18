@@ -381,3 +381,116 @@ private:
 		return cur_depth < closest_depth ? 1.0 : 0.0;
 	}
 };
+
+// use PCF improve shadow;
+class DepthShader : public IShader {
+public:
+	Model *model = nullptr;
+	mat4 uniform_model;
+	mat4 uniform_view;
+	mat4 uniform_projection;
+
+	virtual vec4 vertex(int iface, int nthvert) {
+		vec4 gl_Vertex = vec4(model->vert(iface, nthvert), 1.0);
+		return uniform_projection * uniform_view * uniform_model * gl_Vertex;
+	}
+
+	virtual bool fragment(vec3 bar, TGAColor& color) {
+		return false;
+	}
+private:
+
+};
+// Blinn-Phong Shading and tangent space normal map
+class Shader : public IShader {
+public:
+	Model *model = nullptr;
+	TGAImage *uniform_shadow_map;
+	mat4 uniform_model;
+	mat4 uniform_view;
+	mat4 uniform_projection;
+	mat4 uniform_vp;
+	mat4 uniform_shadow;
+
+	virtual vec4 vertex(int iface, int nthvert) {
+		varying_uv.set_col(nthvert, model->uv(iface, nthvert));
+		varying_normal.set_col(nthvert, model->normal(iface, nthvert));
+		vec4 gl_Vertex = vec4(model->vert(iface, nthvert), 1.0);
+		gl_Vertex = uniform_model * gl_Vertex;
+		varying_pos.set_col(nthvert, vec3(gl_Vertex));
+		return uniform_projection * uniform_view * gl_Vertex;
+	}
+
+	virtual bool fragment(vec3 bar, TGAColor& color) {
+		vec2 frag_uv = varying_uv * bar;
+		vec3 pos = vec3(varying_pos * bar);	// fragment position in world space
+
+		float shadow = 0.3 + 0.7 *  visibility(bar);
+
+		vec3 n = tbn_normal(bar);
+		vec3 l = light_dir.normalize();
+		vec3 v = (eye - pos).normalize();
+		vec3 r = (v + l).normalize();
+
+		float spec = pow(std::max(0.0, dot(r, n)), model->specular(frag_uv));
+		float diff = std::max(0.0, dot(n, l));
+
+		TGAColor c = model->diffuse(frag_uv);
+		for (int i = 0; i < 3; ++i) {
+			color[i] = std::min<float>(20 + c[i] * shadow * (1.2 * diff + .6 * spec), 255);
+		}
+		color[3] = c[3];
+		color.bytes_per_pixel = c.bytes_per_pixel;
+
+		return false;
+	}
+
+
+private:
+	mat<2, 3> varying_uv;
+	mat<3, 3> varying_pos;
+	mat<3, 3> varying_normal;
+
+	// tangent space to world space
+	vec3 tbn_normal(vec3 bar) {
+		vec2 frag_uv = varying_uv * bar;
+		vec3 bn = (varying_normal * bar).normalize();
+		mat3 A;
+		A[0] = varying_pos.col(1) - varying_pos.col(0);
+		A[1] = varying_pos.col(2) - varying_pos.col(0);
+		A[2] = bn;
+		A = A.invert();
+
+		vec3 i = A * vec3(varying_uv[0][1] - varying_uv[0][0], varying_uv[0][2] - varying_uv[0][0], 0);
+		vec3 j = A * vec3(varying_uv[1][1] - varying_uv[1][0], varying_uv[1][2] - varying_uv[1][0], 0);
+		mat3 B;
+		B.set_col(0, i.normalize());
+		B.set_col(1, j.normalize());
+		B.set_col(2, bn);
+
+		vec3 n = (B * model->normal(frag_uv)).normalize();
+		return n;
+	}
+
+	float visibility(vec3& bar) {
+
+		vec3 p = varying_pos * bar;
+		vec4 p1 = uniform_shadow * vec4(p, 1.0);
+		p1 = p1 / p1.w;
+		float cur_depth = p1.z;
+		p1 = 0.5 * p1 + 0.5;
+
+		float visib = 0;
+		float bias = 0.05;
+		vec2 texel_size = vec2(1.0/uniform_shadow_map->width(), 1.0/uniform_shadow_map->height());
+		for (int x = -2; x <= 2; ++x) {
+			for (int y = -2; y <= 2; ++y) {
+				float pcf_depth = texture(uniform_shadow_map, vec2(p1.x, p1.y) + (vec2(x, y) * texel_size))[0];
+				float tmp = cur_depth + bias;
+				tmp = 127.5 * tmp + 127.5;
+				visib += tmp < pcf_depth ? 0.0 : 1.0;
+			}
+		}
+		return visib / 25.0;
+	}
+};

@@ -4,5 +4,6 @@
 
 - [x] shadow map
 - [x] point light source
-- [ ] alpha test
+- [x] alpha blend
+- [ ] ray tracing
 - [ ] ambient occlusion

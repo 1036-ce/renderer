@@ -75,7 +75,7 @@ public:
 		vec2 frag_uv = varying_uv * bar;
 		vec3 pos = vec3(varying_pos * bar);	// fragment position in world space
 
-		float shadow = 0.3 + 0.7 * !is_shadow(bar);
+		float shadow = 0.3 + 0.7 * visibility(bar);
 
 		vec3 n = tbn_normal(bar);
 		// vec3 l = light_dir.normalize();
@@ -125,20 +125,27 @@ private:
 		return n;
 	}
 
-	float is_shadow(vec3& bar) {
+	float visibility(vec3& bar) {
 
 		vec3 p = varying_pos * bar;
 		vec4 p1 = uniform_shadow * vec4(p, 1.0);
 		p1 = p1 / p1.w;
 		float cur_depth = p1.z;
 		p1 = 0.5 * p1 + 0.5;
-		float closest_depth = texture(uniform_shadow_map, vec2(p1.x, p1.y))[0];
 
-		// shadow bias 
+		float visib = 0;
 		float bias = 0.05;
-		cur_depth += bias;
-		cur_depth = 127.5 * cur_depth + 127.5;
-		return cur_depth < closest_depth ? 1.0 : 0.0;
+		vec2 texel_size = vec2(1.0/uniform_shadow_map->width(), 1.0/uniform_shadow_map->height());
+		for (int x = -3; x <= 3; ++x) {
+			for (int y = -3; y <= 3; ++y) {
+				float pcf_depth = texture(uniform_shadow_map, vec2(p1.x, p1.y) + (vec2(x, y) * texel_size))[0];
+				float tmp = cur_depth + bias;
+				tmp = 127.5 * tmp + 127.5;
+				visib += tmp < pcf_depth ? 0.0 : 1.0;
+			}
+		}
+		return visib / 49.0;
+
 	}
 };
 
