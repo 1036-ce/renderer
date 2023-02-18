@@ -103,8 +103,15 @@ void Model::draw(IShader &shader, const mat4 &vp, DepthBuffer &depth_buf,
 			clip_coord[j] = shader.vertex(i, j);
 		}
 		Triangle t(clip_coord);
+		if (gl_blend)
+			t.enable(GL_BLEND);
 		t.draw(shader, vp, depth_buf, color_buf, aa_f);
 	}
+}
+
+void Model::enable(const uint16_t &feature) {
+	if (feature & GL_BLEND)
+		gl_blend = true;
 }
 
 int Model::nverts() const {

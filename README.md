@@ -3,5 +3,6 @@
 ### TODO
 
 - [x] shadow map
-- [ ] point light source
+- [x] point light source
+- [ ] alpha test
 - [ ] ambient occlusion

@@ -2,6 +2,8 @@
 #include "tgaimage.h"
 #include "buffer.h"
 
+const u_int32_t GL_BLEND = 0x01;	// alpha blend
+
 class IShader {
 public:
 	virtual vec4 vertex(int iface, int nthvert) = 0;

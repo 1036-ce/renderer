@@ -139,7 +139,10 @@ void TGAImage::flip_vertically() {
 TGAColor TGAImage::get(const int x, const int y) const {
 	if (!data.size() || x<0 || x>=w || y<0 || y>=h)
 		return {};
-	return TGAColor(data.data() + (y * w + x) * bpp, bpp);
+	TGAColor ret(data.data() + (y * w + x) * bpp, bpp);
+	if (bpp <= 3)
+		ret.bgra[3] = 255;
+	return ret;
 }
 
 void TGAImage::set(const int x, const int y, const TGAColor &c) {
@@ -255,7 +258,7 @@ bool TGAImage::unload_rle_data(std::ofstream &out) const {
 TGAColor operator*(const TGAColor &c, float intensity) {
 	TGAColor ret;
 	intensity = std::clamp(intensity, 0.0f, 1.0f);
-	for (int i = 0; i < 3; ++i)
+	for (int i = 0; i < 4; ++i)
 		ret.bgra[i] = c.bgra[i] * intensity;
 	ret.bytes_per_pixel = c.bytes_per_pixel;
 	return ret;
@@ -265,8 +268,9 @@ TGAColor operator+(const TGAColor &lhs, const TGAColor &rhs) {
 	// assert(lhs.bytes_per_pixel == rhs.bytes_per_pixel);
 	TGAColor ret;
 	ret.bytes_per_pixel = rhs.bytes_per_pixel;
-	for (int i = 0; i < rhs.bytes_per_pixel; ++i) {
-		ret.bgra[i] = lhs.bgra[i] + rhs.bgra[i];
+	// for (int i = 0; i < rhs.bytes_per_pixel; ++i) {
+	for (int i = 0; i < 4; ++i) {
+		ret.bgra[i] = std::min(lhs.bgra[i] + rhs.bgra[i], 255);
 	}
 	return ret;
 }

@@ -155,16 +155,12 @@ int main(int argc, char **argv) {
 
 		for (int i = 0; i < width; ++i) {
 			for (int j = 0; j < height; ++j) {
-				if (depth_buf.get_value(i, j) != -std::numeric_limits<float>::max())
-					std::cout << depth_buf.get_value(i, j) << std::endl;
 				uint8_t depth = 127.5 * depth_buf.get_value(i, j) + 127.5;
 				TGAColor c(depth);
 				depth_map.set(i, j, c);
 			}
 		}
-		depth_map.write_tga_file("depth_map.tga");
-		system("convert depth_map.tga depth_map.png");
-		system("mv depth_map.png ../");
+		depth_map.write_tga_file("example_shadow_depth_map.tga");
 	}
 
 
@@ -203,9 +199,7 @@ int main(int argc, char **argv) {
 			}
 		}
 
-		image.write_tga_file("output.tga");
-		system("convert output.tga output.png");
-		system("mv output.png ../");
+		image.write_tga_file("example_shadow.tga");
 	}
 
 	delete head;

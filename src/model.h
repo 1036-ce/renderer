@@ -23,6 +23,7 @@ public:
 	Model(const std::string filename); 
 	void draw(IShader& shader, const mat4& vp, DepthBuffer& depth_buf, 
 			  ColorBuffer *color_buf, Triangle::AA_Format aa_f = Triangle::NOAA);
+	void enable(const uint16_t& feature);
 	int nverts() const;
 	int nfaces() const;
 	vec3 normal(const int iface, const int nthvert) const; 	// per triangle corner normal vertex
@@ -39,6 +40,7 @@ private:
 	void load_texture(const std::string filename, const std::string suffix, TGAImage& img);
 	void gen_normal();
 
+	bool gl_blend = false;
 	std::vector<vec3> verts{};		// array of vertices
 	std::vector<vec2> tex_coord{}; 	// per-vertex array of tex coords
 	std::vector<vec3> norms{};		// per-vertex array of notmal vectors

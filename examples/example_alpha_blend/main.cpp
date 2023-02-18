@@ -8,30 +8,10 @@
 const int width  = 800;
 const int height = 800;
 
-const vec3 light_pos(1, 1, 2);
-const vec3 eye(-1, 1, 7);
-const vec3 center(0, 0, 0);
-const vec3 up(0, 1, 0);
-
-class LightShader : public IShader {
-public:
-	Model *model;
-	mat4 uniform_model;
-	mat4 uniform_view;
-	mat4 uniform_proj;
-
-	virtual vec4 vertex(int iface, int nthvert) {
-		vec4 gl_Vertex = vec4(model->vert(iface, nthvert), 1.0);
-		return uniform_proj * uniform_view * uniform_model * gl_Vertex;
-	}
-
-	virtual bool fragment(vec3 bar, TGAColor &color) {
-		color = TGAColor(255, 255, 255);
-		return false;
-	}
-private:
-};
-
+vec3 light_dir(1, 1, 1);
+vec3 eye(1, 1, 7);
+vec3 center(0, 0, 0);
+vec3 up(0, 1, 0);
 
 class DepthShader : public IShader {
 public:
@@ -60,6 +40,7 @@ public:
 	mat4 uniform_model;
 	mat4 uniform_view;
 	mat4 uniform_projection;
+	mat4 uniform_vp;
 	mat4 uniform_shadow;
 
 	virtual vec4 vertex(int iface, int nthvert) {
@@ -78,19 +59,16 @@ public:
 		float shadow = 0.3 + 0.7 * !is_shadow(bar);
 
 		vec3 n = tbn_normal(bar);
-		// vec3 l = light_dir.normalize();
-		vec3 l = (light_pos - pos).normalize();
+		vec3 l = light_dir.normalize();
 		vec3 v = (eye - pos).normalize();
 		vec3 r = (v + l).normalize();
 
 		float spec = pow(std::max(0.0, dot(r, n)), model->specular(frag_uv));
 		float diff = std::max(0.0, dot(n, l));
-		
 
 		TGAColor c = model->diffuse(frag_uv);
-		float coeff = 7.0 / (light_pos - pos).norm2();
 		for (int i = 0; i < 3; ++i) {
-			color[i] = std::min<float>(coeff * (20 + c[i] * shadow * (1.2 * diff + .6 * spec)), 255);
+			color[i] = std::min<float>(20 + c[i] * shadow * (1.2 * diff + .6 * spec), 255);
 		}
 		color[3] = c[3];
 		color.bytes_per_pixel = c.bytes_per_pixel;
@@ -142,93 +120,109 @@ private:
 	}
 };
 
-
 int main(int argc, char **argv) {
-	Model *sphere = new Model("../obj/sphere/sphere.obj");
-	// Model *head   = new Model("../obj/african_head/african_head.obj");
-	Model *head   = new Model("../obj/boggie/body.obj");
+	// Model *model = nullptr;
+	Model *head = new Model("../obj/african_head/african_head.obj");
 	Model *floor  = new Model("../obj/floor/floor.obj");
-
-	Camera camera(eye, center, up);
+	Model *window = new Model("../obj/window/window.obj");
 	mat4 vp = viewport(0, 0, width, height);
-	mat4 view = camera.get_view_mat();
-	mat4 proj = perspective(radius(45), (float)width / (float)height, -0.1f, -30.0f);
-	// scale before translate
-	mat4 sphere_model = scale(mat4::identity(), vec3(0.03, 0.03, 0.03));
-	sphere_model = translate(sphere_model, light_pos);
-	mat4 head_model = translate(mat4::identity(), vec3(0, -1.0, 0));
-	mat4 floor_model = scale(mat4::identity(), vec3(2, 2, 2));
+
+	mat4 floor_model = mat4::identity();
+	floor_model = scale(floor_model, vec3(2, 2, 2));
 	floor_model = translate(floor_model, vec3(-1, 0, -1));
+	mat4 head_model = mat4::identity();
+	head_model = translate(head_model, vec3(0, -1.0, 0));
+	mat4 window_model = scale(mat4::identity(), vec3(0.3, 0.3, 0.3));
+	window_model = translate(window_model, vec3(0.6, 0.2, 4.1));
 
-	TGAImage image(width, height, TGAImage::RGB);
-	TGAImage shadow_map(width, height, TGAImage::GRAYSCALE);
-	DepthBuffer shadow_buf(width, height, -std::numeric_limits<float>::max(), 4);
-	DepthBuffer zbuf(width, height, -std::numeric_limits<float>::max(), 4);
-	ColorBuffer color_buf(width, height, TGAColor(0, 0, 0), 4);
+	DepthBuffer depth_buf(width, height, -std::numeric_limits<float>::max(), 4);
+	TGAImage depth_map(width, height, TGAImage::GRAYSCALE);
+	DepthShader d_shader;
+	mat4 light_model = mat4::identity();
+	mat4 light_view  = lookat(vec3(1, 1, 1), center, up);
+	mat4 light_proj  = orthographic(-4.0, 4.0, -0.1, -10.0, -4.0, 4.0);
+	// mat4 light_proj = perspective(radius(45), (float)width/(float)height, -0.1f, -10.0f);
+	d_shader.uniform_view  = light_view;
+	d_shader.uniform_projection = light_proj;
 
 
-	// gen shadow map
-	Camera tmp(light_pos, center, up);
-	// mat4 shadow_view = tmp.get_view_mat();
-	mat4 shadow_view = lookat(light_pos, center, up);
-	mat4 shadow_proj = perspective(radius(120), (float)width/(float)height, -1.1f, -100.0f);
+	// generate shadow map
 	{
-		DepthShader d_shader;
-		d_shader.uniform_projection = shadow_proj;
-		d_shader.uniform_view = shadow_view;
+		d_shader.uniform_model = floor_model;
+		d_shader.model = floor;
+		floor->draw(d_shader, vp, depth_buf, nullptr, Triangle::MSAA4);
 
 		d_shader.uniform_model = head_model;
 		d_shader.model = head;
-		head->draw(d_shader, vp, shadow_buf, nullptr, Triangle::MSAA4);
+		head->draw(d_shader, vp, depth_buf, nullptr, Triangle::MSAA4);
 
-		d_shader.uniform_model = floor_model;
-		d_shader.model = floor;
-		floor->draw(d_shader, vp, shadow_buf, nullptr, Triangle::MSAA4);
+		d_shader.uniform_model = window_model;
+		d_shader.model = window;
+		window->draw(d_shader, vp, depth_buf, nullptr, Triangle::MSAA4);
 
-		for (int x = 0; x < width; ++x) {
-			for (int y = 0; y < height; ++y) {
-				uint8_t depth = 127.5 * shadow_buf.get_value(x, y) + 127.5;
+		for (int i = 0; i < width; ++i) {
+			for (int j = 0; j < height; ++j) {
+				uint8_t depth = 127.5 * depth_buf.get_value(i, j) + 127.5;
 				TGAColor c(depth);
-				shadow_map.set(x, y, c);
+				depth_map.set(i, j, c);
 			}
 		}
+		depth_map.write_tga_file("example_alpha_blend_shadow.tga");
 	}
 
-	// render image
+
+
+	Camera camera(eye, center, up);
+	TGAImage image(width, height, TGAImage::RGB);
+
+	Shader shader;
+	mat4 model_mat = mat4::identity();
+	mat4 model_view = camera.get_view_mat();
+	mat4 model_proj = perspective(radius(45), (float)width / (float)height, -0.1, -100.0);
+	shader.uniform_model = model_mat;
+	shader.uniform_view = model_view;
+	shader.uniform_projection = model_proj;
+	shader.uniform_vp = vp;
+	shader.uniform_shadow_map = &depth_map;
+	shader.uniform_shadow = light_proj * light_view;
+
+	ColorBuffer color_buf = ColorBuffer(width, height, TGAColor(0, 0, 0), 4);
+	DepthBuffer zbuf(width, height, -std::numeric_limits<float>::max(), 4);
+
+	// generate image
 	{
-		// draw light source
-		LightShader l_shader;
-		l_shader.uniform_view = view;
-		l_shader.uniform_proj = proj;
-		l_shader.uniform_model = sphere_model;
-		l_shader.model = sphere;
-		sphere->draw(l_shader, vp, zbuf, &color_buf, Triangle::MSAA4);
-
-		Shader shader;
-		shader.uniform_projection = proj;
-		shader.uniform_view = view;
-		shader.uniform_shadow = shadow_proj * shadow_view;
-		shader.uniform_shadow_map = &shadow_map;
-
-		// draw head
-		shader.uniform_model = head_model;
-		shader.model = head;
-		head->draw(shader, vp, zbuf, &color_buf, Triangle::MSAA4);
-
-		// draw floor
 		shader.uniform_model = floor_model;
 		shader.model = floor;
 		floor->draw(shader, vp, zbuf, &color_buf, Triangle::MSAA4);
 
+		shader.uniform_model = head_model;
+		shader.model = head;
+		head->draw(shader, vp, zbuf, &color_buf, Triangle::MSAA4);
+
+
 		for (int x = 0; x < width; ++x) {
 			for (int y = 0; y < height; ++y) {
-				image.set(x, y, TGAColor(color_buf.get_value(x, y)));
+				TGAColor c = color_buf.get_value(x, y);
+				image.set(x, y, c);
 			}
 		}
+
+		shader.uniform_model = window_model;
+		shader.model = window;
+		window->enable(GL_BLEND);
+		window->draw(shader, vp, zbuf, &color_buf, Triangle::MSAA4);
+
+		for (int x = 0; x < width; ++x) {
+			for (int y = 0; y < height; ++y) {
+				TGAColor c = color_buf.get_value(x, y);
+				image.set(x, y, c);
+			}
+		}
+
+		image.write_tga_file("example_alpha_blend.tga");
 	}
 
-	shadow_map.write_tga_file("example_point_light_shadow.tga");
-
-	image.write_tga_file("example_point_light.tga");
+	delete head;
+	delete floor;
 	return 0;
 }

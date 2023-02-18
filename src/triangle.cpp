@@ -53,13 +53,24 @@ void Triangle::draw(IShader &shader, const mat4 &vp, DepthBuffer &zbuf,
 				depth_t d = std::get<1>(pack[i]);
 				if (d >= -1.0 && d <= 1.0 && d > zbuf.get(x, y, idx)) {
 					color_t color = std::get<2>(pack[i]);
+					if (color_buf && gl_blend) {
+						color_t tmp = color_buf->get(x, y, idx);
+						float alpha = (float)color[3] / 255.0;
+						color = (color * alpha) + (tmp * (1 - alpha));
+					}
 					zbuf.set(x, y, idx, d);
-					if (color_buf)
+					if (color_buf && color[3] != 0)	// if alpha == 0, ignore it
+					// if (color_buf)	// if alpha == 0, ignore it
 						color_buf->set(x, y, idx, color);
 				}
 			}
 		}
 	}
+}
+
+void Triangle::enable(const uint32_t & feature) {
+	if (feature & GL_BLEND)
+		gl_blend = true;
 }
 
 vec3 Triangle::baryentric(const vec2 &p) {
@@ -122,7 +133,10 @@ Triangle::msaa(int x, int y, int sample_num, IShader &shader) {
 
 	bar_corrent(bar, w);
 	color_t color;
-	shader.fragment(bar, color);
+	bool discard = shader.fragment(bar, color);
+	if (discard) 
+		color = TGAColor(0, 0, 0, 0);
+
 	for (int idx: tmp) {
 		ret.push_back(std::make_tuple(idx, d, color));
 	}
