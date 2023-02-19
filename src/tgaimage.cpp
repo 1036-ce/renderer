@@ -265,10 +265,8 @@ TGAColor operator*(const TGAColor &c, float intensity) {
 }
 
 TGAColor operator+(const TGAColor &lhs, const TGAColor &rhs) {
-	// assert(lhs.bytes_per_pixel == rhs.bytes_per_pixel);
 	TGAColor ret;
 	ret.bytes_per_pixel = rhs.bytes_per_pixel;
-	// for (int i = 0; i < rhs.bytes_per_pixel; ++i) {
 	for (int i = 0; i < 4; ++i) {
 		ret.bgra[i] = std::min(lhs.bgra[i] + rhs.bgra[i], 255);
 	}

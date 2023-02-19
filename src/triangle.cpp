@@ -25,7 +25,8 @@ void Triangle::draw(IShader &shader, const mat4 &vp, DepthBuffer &zbuf,
 	using std::placeholders::_1;
 	using std::placeholders::_2;
 	using std::placeholders::_3;
-	using Simpler = vector<tuple<int, depth_t, color_t>>(int, int, IShader&);
+	// using Simpler = vector<tuple<int, depth_t, color_t>>(int, int, IShader&);
+	using Simpler = pack_t(int, int, IShader&);
 	std::function<Simpler> simpler;
 	if (aa_f == AA_Format::NOAA) {
 		assert(zbuf.simple_num() == 1);
@@ -44,7 +45,7 @@ void Triangle::draw(IShader &shader, const mat4 &vp, DepthBuffer &zbuf,
 		simpler = std::bind(&Triangle::ssaa, this, _1, _2, 4, _3);
 	}
 
-	vector<tuple<int, depth_t, color_t>> pack;
+	pack_t pack;
 	for (int x = bbox_left; x <= bbox_right; ++x) {
 		for (int y = bbox_bottom; y <= bbox_top; ++y) {
 			pack = simpler(x, y, shader);
@@ -52,15 +53,18 @@ void Triangle::draw(IShader &shader, const mat4 &vp, DepthBuffer &zbuf,
 				int   idx = std::get<0>(pack[i]);
 				depth_t d = std::get<1>(pack[i]);
 				if (d >= -1.0 && d <= 1.0 && d > zbuf.get(x, y, idx)) {
-					color_t color = std::get<2>(pack[i]);
+					zbuf.set(x, y, idx, d);		// pass depth test, write depth
+
+					std::optional<color_t> c = std::get<2>(pack[i]);
+					if (!c.has_value())
+						continue;
+					color_t color = c.value();
 					if (color_buf && gl_blend) {
 						color_t tmp = color_buf->get(x, y, idx);
 						float alpha = (float)color[3] / 255.0;
 						color = (color * alpha) + (tmp * (1 - alpha));
 					}
-					zbuf.set(x, y, idx, d);
 					if (color_buf && color[3] != 0)	// if alpha == 0, ignore it
-					// if (color_buf)	// if alpha == 0, ignore it
 						color_buf->set(x, y, idx, color);
 				}
 			}
@@ -89,9 +93,9 @@ void Triangle::bar_corrent(vec3 &bar, double w) {
 	bar = 1.0 / w * vec3(verts[0].w, verts[1].w, verts[2].w) * bar;
 }
 
-vector<tuple<int, depth_t, color_t>>
-Triangle::noaa(int x, int y, int sample_num, IShader &shader) {
-	vector<tuple<int, depth_t, color_t>> ret;
+// vector<tuple<int, depth_t, color_t>>
+pack_t Triangle::noaa(int x, int y, int sample_num, IShader &shader) {
+	pack_t ret;
 	vec3 bar  = baryentric(vec2(x + 0.5, y + 0.5));
 	if (bar.x < 0 || bar.y < 0 || bar.z < 0)
 		return ret;
@@ -99,20 +103,20 @@ Triangle::noaa(int x, int y, int sample_num, IShader &shader) {
 	double  w = dot(vec3(verts[0].w, verts[1].w, verts[2].w), bar);
 
 	bar_corrent(bar, w);
-	color_t color;
-	shader.fragment(bar, color);
+	// color_t color;
+	std::optional<color_t> color(shader.fragment(bar));
 	ret.push_back(std::make_tuple(0, d, color));
 	return ret;
 }
 
-vector<tuple<int, depth_t, color_t>>
-Triangle::msaa(int x, int y, int sample_num, IShader &shader) {
+// vector<tuple<int, depth_t, color_t>>
+pack_t Triangle::msaa(int x, int y, int sample_num, IShader &shader) {
 	vector<vec2> offsets;
 	if (sample_num == 4) {
 		offsets = { {0.25, 0.25}, {0.75, 0.25}, {0.25, 0.75}, {0.75, 0.75} };
 	}
 
-	vector<tuple<int, depth_t, color_t>> ret;
+	pack_t ret;
 	vector<int> tmp;
 	vec2 target(0, 0);
 	vec3 bar;
@@ -132,10 +136,10 @@ Triangle::msaa(int x, int y, int sample_num, IShader &shader) {
 	double w  = dot(vec3(verts[0].w, verts[1].w, verts[2].w), bar);
 
 	bar_corrent(bar, w);
-	color_t color;
-	bool discard = shader.fragment(bar, color);
-	if (discard) 
-		color = TGAColor(0, 0, 0, 0);
+	std::optional<color_t> color(shader.fragment(bar));
+	// bool discard = shader.fragment(bar, color);
+	// if (discard) 
+		// color = TGAColor(0, 0, 0, 0);
 
 	for (int idx: tmp) {
 		ret.push_back(std::make_tuple(idx, d, color));
@@ -143,14 +147,14 @@ Triangle::msaa(int x, int y, int sample_num, IShader &shader) {
 	return ret;
 }
 
-vector<tuple<int, depth_t, color_t>>
-Triangle::ssaa(int x, int y, int sample_num, IShader &shader) {
+// vector<tuple<int, depth_t, color_t>>
+pack_t Triangle::ssaa(int x, int y, int sample_num, IShader &shader) {
 	vector<vec2> offsets;
 	if (sample_num == 4) {
 		offsets = { {0.25, 0.25}, {0.75, 0.25}, {0.25, 0.75}, {0.75, 0.75} };
 	}
 
-	vector<tuple<int, depth_t, color_t>> ret;
+	pack_t ret;
 	vec3 bar;
 	color_t color;
 	for (int i = 0; i < sample_num; ++i) {
@@ -159,7 +163,7 @@ Triangle::ssaa(int x, int y, int sample_num, IShader &shader) {
 			depth_t d = dot(vec3(verts[0].z, verts[1].z, verts[2].z), bar);
 			double  w = dot(vec3(verts[0].w, verts[1].w, verts[2].w), bar);
 			bar_corrent(bar, w);
-			shader.fragment(bar, color);
+			std::optional<color_t> color(shader.fragment(bar));
 			ret.push_back(std::make_tuple(i, d, color));
 		}
 	}

@@ -79,7 +79,6 @@ Model::Model(const std::string filename) {
 	if (norms.size() == 0)
 		gen_normal();
 	in.close();
-    std::cerr << "# v# " << nverts() << " f# "  << nfaces() << " vt# " << tex_coord.size() << " vn# " << norms.size() << std::endl;
 	load_texture(filename, "_diffuse.tga", 	  diffusemap );
 	// load_texture(filename, "_nm.tga", normalmap  );		// here!
 	load_texture(filename, "_nm_tangent.tga", normalmap  );		// here!

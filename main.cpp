@@ -25,7 +25,7 @@ public:
 		return uniform_projection * uniform_view * uniform_model * gl_Vertex;
 	}
 
-	virtual bool fragment(vec3 bar, TGAColor& color) {
+	virtual std::optional<TGAColor> fragment(vec3 bar) {
 		return false;
 	}
 private:
@@ -52,7 +52,7 @@ public:
 		return uniform_projection * uniform_view * gl_Vertex;
 	}
 
-	virtual bool fragment(vec3 bar, TGAColor& color) {
+	virtual std::optional<TGAColor> fragment(vec3 bar) {
 		vec2 frag_uv = varying_uv * bar;
 		vec3 pos = vec3(varying_pos * bar);	// fragment position in world space
 
@@ -67,13 +67,14 @@ public:
 		float diff = std::max(0.0, dot(n, l));
 
 		TGAColor c = model->diffuse(frag_uv);
+		TGAColor color;
 		for (int i = 0; i < 3; ++i) {
 			color[i] = std::min<float>(20 + c[i] * shadow * (1.2 * diff + .6 * spec), 255);
 		}
 		color[3] = c[3];
 		color.bytes_per_pixel = c.bytes_per_pixel;
 
-		return false;
+		return std::optional<TGAColor>(color);
 	}
 
 

@@ -29,13 +29,14 @@ public:
 		return gl_Vertex;
 	}
 
-	virtual bool fragment(vec3 bar, TGAColor& color) {
+	virtual std::optional<TGAColor> fragment(vec3 bar) {
 		vec2 frag_uv = varying_uv * bar;
 
+		TGAColor color;
 		color = model->diffuse(frag_uv);
 		// color = TGAColor(123, 231, 12);
 
-		return false;
+		return std::optional<TGAColor>(color);
 	}
 private:
 	mat<2, 3> varying_uv;

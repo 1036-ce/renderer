@@ -11,6 +11,7 @@ using std::tuple;
 
 using depth_t = float;
 using color_t = TGAColor;
+using pack_t = vector<tuple<int, depth_t, std::optional<color_t>>>;
 
 class Triangle
 {
@@ -33,9 +34,9 @@ private:
 	bool gl_blend = false;
 	// vector<pair<int, TGAColor>> msaa(int x, int y, int sample_num, IShader& shader);
 	// vector<pair<int, TGAColor>> ssaa(int x, int y, int sample_num, IShader& shader);
-	vector<tuple<int, depth_t, color_t>> noaa(int x, int y, int sample_num, IShader& shader);
-	vector<tuple<int, depth_t, color_t>> msaa(int x, int y, int sample_num, IShader& shader);
-	vector<tuple<int, depth_t, color_t>> ssaa(int x, int y, int sample_num, IShader& shader);
+	pack_t noaa(int x, int y, int sample_num, IShader& shader);
+	pack_t msaa(int x, int y, int sample_num, IShader& shader);
+	pack_t ssaa(int x, int y, int sample_num, IShader& shader);
 
 	vec4 verts[3];	// vertexs of triangle in clip space
 	vec4 scoord[3];	// vertex of triangle in screen space

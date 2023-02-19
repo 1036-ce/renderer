@@ -1,4 +1,5 @@
 #pragma once
+#include <optional>
 #include "tgaimage.h"
 #include "buffer.h"
 
@@ -7,7 +8,7 @@ const u_int32_t GL_BLEND = 0x01;	// alpha blend
 class IShader {
 public:
 	virtual vec4 vertex(int iface, int nthvert) = 0;
-	virtual bool fragment(vec3 bar, TGAColor &color) = 0;
+	virtual std::optional<TGAColor> fragment(vec3 bar) = 0;
 	virtual ~IShader() = default;
 };
 
