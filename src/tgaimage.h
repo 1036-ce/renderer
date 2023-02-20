@@ -4,6 +4,7 @@
 #include <fstream>
 #include <algorithm>
 #include <cassert>
+#include "color.h"
 #include "geometry.h"
 
 #pragma pack(push, 1)
@@ -30,6 +31,7 @@ struct TGAColor
 	std::uint8_t bytes_per_pixel = 0;
 
 	TGAColor() = default;
+	Color as_color();
 	TGAColor(const std::uint8_t R, const std::uint8_t G, const std::uint8_t B, const std::uint8_t A = 255)
 		: bgra{B,G,R,A}, bytes_per_pixel(4) { }
 	TGAColor(const std::uint8_t *p, const std::uint8_t bytes_per_pixel) : bytes_per_pixel(bytes_per_pixel) {

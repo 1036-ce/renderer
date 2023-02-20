@@ -272,3 +272,12 @@ TGAColor operator+(const TGAColor &lhs, const TGAColor &rhs) {
 	}
 	return ret;
 }
+
+Color TGAColor::as_color() {
+	Color ret;
+	ret.r = bgra[2] / 255.0;
+	ret.g = bgra[1] / 255.0;
+	ret.b = bgra[0] / 255.0;
+	ret.a = bgra[3] / 255.0;
+	return ret;
+}
