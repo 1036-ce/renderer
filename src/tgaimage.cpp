@@ -136,19 +136,20 @@ void TGAImage::flip_vertically() {
 				std::swap(data[(i+j*w)*bpp+k], data[(i+(h-1-j)*w)*bpp + k]);
 }
 
-TGAColor TGAImage::get(const int x, const int y) const {
+color_t TGAImage::get(const int x, const int y) const {
 	if (!data.size() || x<0 || x>=w || y<0 || y>=h)
 		return {};
 	TGAColor ret(data.data() + (y * w + x) * bpp, bpp);
 	if (bpp <= 3)
 		ret.bgra[3] = 255;
-	return ret;
+	return ret.as_color();
 }
 
-void TGAImage::set(const int x, const int y, const TGAColor &c) {
+void TGAImage::set(const int x, const int y, const color_t &c) {
 	if (!data.size() || x<0 || x>=w || y<0 || y>=h)
 		return;
-	memcpy(data.data() + (y * w + x) * bpp, c.bgra, bpp);
+	TGAColor color(c);
+	memcpy(data.data() + (y * w + x) * bpp, color.bgra, bpp);
 }
 
 int TGAImage::width() const {
@@ -273,11 +274,11 @@ TGAColor operator+(const TGAColor &lhs, const TGAColor &rhs) {
 	return ret;
 }
 
-Color TGAColor::as_color() {
-	Color ret;
-	ret.r = bgra[2] / 255.0;
-	ret.g = bgra[1] / 255.0;
+color_t TGAColor::as_color() {
+	color_t ret;
 	ret.b = bgra[0] / 255.0;
+	ret.g = bgra[1] / 255.0;
+	ret.r = bgra[2] / 255.0;
 	ret.a = bgra[3] / 255.0;
 	return ret;
 }

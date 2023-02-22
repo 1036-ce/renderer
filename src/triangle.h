@@ -9,8 +9,6 @@
 using std::vector;
 using std::tuple;
 
-using depth_t = float;
-using color_t = TGAColor;
 using pack_t = vector<tuple<int, depth_t, std::optional<color_t>>>;
 
 class Triangle

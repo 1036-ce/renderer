@@ -60,8 +60,10 @@ void Triangle::draw(IShader &shader, const mat4 &vp, DepthBuffer &zbuf,
 						continue;
 					color_t color = c.value();
 					if (color_buf && gl_blend) {
+						// color_t tmp = color_buf->get(x, y, idx);
 						color_t tmp = color_buf->get(x, y, idx);
-						float alpha = (float)color[3] / 255.0;
+						// float alpha = (float)color[3] / 255.0;
+						float alpha = color.a;
 						color = (color * alpha) + (tmp * (1 - alpha));
 					}
 					if (color_buf && color[3] != 0)	// if alpha == 0, ignore it

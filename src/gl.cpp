@@ -102,13 +102,13 @@ mat4 viewport(int x, int y, int w, int h) {
 	return m;
 }
 
-TGAColor texture(TGAImage *simpler, const vec2 &uv) {
+color_t texture(TGAImage *simpler, const vec2 &uv) {
 	int x = simpler->width()  * uv.x;
 	int y = simpler->height() * uv.y;
 	return simpler->get(x, y);
 }
 
-void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) {
+void line(int x0, int y0, int x1, int y1, TGAImage &image, color_t color) {
 	bool steep = false;
 	if (std::abs(x0 - x1) < std::abs(y0 - y1)) {
 		steep = true;

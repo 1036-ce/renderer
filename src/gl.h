@@ -3,12 +3,11 @@
 #include "tgaimage.h"
 #include "buffer.h"
 
-const u_int32_t GL_BLEND = 0x01;	// alpha blend
 
 class IShader {
 public:
 	virtual vec4 vertex(int iface, int nthvert) = 0;
-	virtual std::optional<TGAColor> fragment(vec3 bar) = 0;
+	virtual std::optional<color_t> fragment(vec3 bar) = 0;
 	virtual ~IShader() = default;
 };
 
@@ -35,7 +34,7 @@ mat4 perspective(float fovY, float aspect, double near, double far);
 
 mat4 viewport(int x, int y, int w, int h);
 
-TGAColor texture(TGAImage *simpler, const vec2& uv);
+color_t texture(TGAImage *simpler, const vec2& uv);
 
 float radius(float angle);
 

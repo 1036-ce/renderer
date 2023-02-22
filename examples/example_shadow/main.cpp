@@ -4,6 +4,7 @@
 #include "buffer.h"
 #include "triangle.h"
 #include "model.h"
+#include "texture.h"
 
 const int width  = 800;
 const int height = 800;
@@ -25,8 +26,8 @@ public:
 		return uniform_projection * uniform_view * uniform_model * gl_Vertex;
 	}
 
-	virtual std::optional<TGAColor> fragment(vec3 bar) {
-		return std::optional<TGAColor>(TGAColor());
+	virtual std::optional<color_t> fragment(vec3 bar) {
+		return std::optional<color_t>(color_t());
 	}
 private:
 
@@ -35,8 +36,11 @@ private:
 // Blinn-Phong Shading and tangent space normal map
 class Shader : public IShader {
 public:
-	Model *model = nullptr;
-	TGAImage *uniform_shadow_map;
+	Model   *model      = nullptr;
+	Texture *diff_map   = nullptr;
+	Texture *shadow_map = nullptr;
+	Texture *normal_map = nullptr;
+	Texture *spec_map   = nullptr;
 	mat4 uniform_model;
 	mat4 uniform_view;
 	mat4 uniform_projection;
@@ -52,7 +56,7 @@ public:
 		return uniform_projection * uniform_view * gl_Vertex;
 	}
 
-	virtual std::optional<TGAColor> fragment(vec3 bar) {
+	virtual std::optional<color_t> fragment(vec3 bar) {
 		vec2 frag_uv = varying_uv * bar;
 		vec3 pos = vec3(varying_pos * bar);	// fragment position in world space
 
@@ -63,18 +67,21 @@ public:
 		vec3 v = (eye - pos).normalize();
 		vec3 r = (v + l).normalize();
 
-		float spec = pow(std::max(0.0, dot(r, n)), model->specular(frag_uv));
+		float spec = 0;
+		if (spec_map) {
+			float f = spec_map->sample(frag_uv)[0] * 255;
+			spec = pow(std::max(0.0, dot(r, n)), f);
+		}
 		float diff = std::max(0.0, dot(n, l));
 
-		TGAColor c = model->diffuse(frag_uv);
-		TGAColor color;
+		color_t c = diff_map->sample(frag_uv);
+		color_t color;
 		for (int i = 0; i < 3; ++i) {
-			color[i] = std::min<float>(20 + c[i] * shadow * (1.2 * diff + .6 * spec), 255);
+			color[i] = std::min<float>(0.07 + c[i] * shadow * (1.2 * diff + 0.6 * spec), 1.0);
 		}
 		color[3] = c[3];
-		color.bytes_per_pixel = c.bytes_per_pixel;
 
-		return std::optional<TGAColor>(color);
+		return std::optional<color_t>(color);
 	}
 
 
@@ -100,7 +107,9 @@ private:
 		B.set_col(1, j.normalize());
 		B.set_col(2, bn);
 
-		vec3 n = (B * model->normal(frag_uv)).normalize();
+		color_t tmp = normal_map->sample(frag_uv);
+		vec3 n = vec3(tmp.r, tmp.g, tmp.b) * 2.0 - vec3(1, 1, 1);
+		n = (B * n).normalize();
 		return n;
 	}
 
@@ -114,12 +123,11 @@ private:
 
 		float visib = 0;
 		float bias = 0.05;
-		vec2 texel_size = vec2(1.0/uniform_shadow_map->width(), 1.0/uniform_shadow_map->height());
+		vec2 texel_size = vec2(1.0/shadow_map->width(), 1.0/shadow_map->height());
 		for (int x = -3; x <= 3; ++x) {
 			for (int y = -3; y <= 3; ++y) {
-				float pcf_depth = texture(uniform_shadow_map, vec2(p1.x, p1.y) + (vec2(x, y) * texel_size))[0];
+				float pcf_depth = shadow_map->sample(vec2(p1.x, p1.y) + vec2(x, y) * texel_size)[0];
 				float tmp = cur_depth + bias;
-				tmp = 127.5 * tmp + 127.5;
 				visib += tmp < pcf_depth ? 0.0 : 1.0;
 			}
 		}
@@ -128,9 +136,21 @@ private:
 };
 
 int main(int argc, char **argv) {
-	// Model *model = nullptr;
 	Model *head = new Model("../obj/african_head/african_head.obj");
 	Model *floor  = new Model("../obj/floor/floor.obj");
+
+	mat3 m;
+	m[0] = {1, 1, 1};
+	m[1] = {1, 1, 1};
+	m[2] = {1, 1, 1};
+	Texture head_diff("../obj/african_head/african_head_diffuse.tga");
+	head_diff.convolute(1.0 / 9 * m);
+	Texture head_spec("../obj/african_head/african_head_spec.tga");
+	Texture head_norm("../obj/african_head/african_head_nm_tangent.tga");
+	Texture floor_diff("../obj/floor/floor_diffuse.tga");
+	Texture floor_norm("../obj/floor/floor_nm_tangent.tga");
+	floor_diff.convolute(1.0 / 9 * m);
+
 	mat4 vp = viewport(0, 0, width, height);
 
 	mat4 floor_model = mat4::identity();
@@ -144,7 +164,7 @@ int main(int argc, char **argv) {
 	DepthShader d_shader;
 	mat4 light_model = mat4::identity();
 	mat4 light_view  = lookat(vec3(1, 1, 1), center, up);
-	mat4 light_proj  = orthographic(-4.0, 4.0, -0.1, -10.0, -4.0, 4.0);
+	mat4 light_proj  = orthographic(-4.0, 4.0, -0.1, -14.0, -4.0, 4.0);
 	// mat4 light_proj = perspective(radius(45), (float)width/(float)height, -0.1f, -10.0f);
 	d_shader.uniform_view  = light_view;
 	d_shader.uniform_projection = light_proj;
@@ -162,12 +182,14 @@ int main(int argc, char **argv) {
 
 		for (int i = 0; i < width; ++i) {
 			for (int j = 0; j < height; ++j) {
-				uint8_t depth = 127.5 * depth_buf.get_value(i, j) + 127.5;
-				TGAColor c(depth);
+				float depth = depth_buf.get_value(i, j);
+				color_t c(depth);
 				depth_map.set(i, j, c);
 			}
 		}
-		depth_map.write_tga_file("example_shadow_depth_map.tga");
+		depth_map.write_tga_file("shadow.tga");
+		system("convert shadow.tga shadow.png");
+		system("mv shadow.png ../");
 	}
 
 
@@ -183,30 +205,37 @@ int main(int argc, char **argv) {
 	shader.uniform_view = model_view;
 	shader.uniform_projection = model_proj;
 	shader.uniform_vp = vp;
-	shader.uniform_shadow_map = &depth_map;
 	shader.uniform_shadow = light_proj * light_view;
+	Texture shadow_map(std::move(depth_map));
+	shader.shadow_map = &shadow_map;
 
-	ColorBuffer color_buf = ColorBuffer(width, height, TGAColor(0, 0, 0), 4);
+	ColorBuffer color_buf = ColorBuffer(width, height, color_t(0, 0, 0, 0), 4);
 	DepthBuffer zbuf(width, height, -std::numeric_limits<float>::max(), 4);
 
 	// generate image
 	{
 		shader.uniform_model = floor_model;
+		shader.diff_map = &floor_diff;
+		shader.spec_map = nullptr;
+		shader.normal_map = &floor_norm;
 		shader.model = floor;
 		floor->draw(shader, vp, zbuf, &color_buf, Triangle::MSAA4);
 
 		shader.uniform_model = head_model;
+		shader.diff_map = &head_diff;
+		shader.spec_map = &head_spec;
+		shader.normal_map = &head_norm;
 		shader.model = head;
 		head->draw(shader, vp, zbuf, &color_buf, Triangle::MSAA4);
 
 		for (int x = 0; x < width; ++x) {
 			for (int y = 0; y < height; ++y) {
-				TGAColor c = color_buf.get_value(x, y);
+				color_t c = color_buf.get_value(x, y);
 				image.set(x, y, c);
 			}
 		}
 
-		image.write_tga_file("example_shadow.tga");
+		image.write_tga_file("shadow.tga");
 	}
 
 	delete head;

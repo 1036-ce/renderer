@@ -4,6 +4,7 @@
 #include <fstream>
 #include <algorithm>
 #include <cassert>
+#include "global.h"
 #include "color.h"
 #include "geometry.h"
 
@@ -31,7 +32,13 @@ struct TGAColor
 	std::uint8_t bytes_per_pixel = 0;
 
 	TGAColor() = default;
-	Color as_color();
+	TGAColor(const color_t& c) : bytes_per_pixel(4) {
+		bgra[0] = c.b * 255;
+		bgra[1] = c.g * 255;
+		bgra[2] = c.r * 255;
+		bgra[3] = c.a * 255;
+	};
+	color_t as_color();
 	TGAColor(const std::uint8_t R, const std::uint8_t G, const std::uint8_t B, const std::uint8_t A = 255)
 		: bgra{B,G,R,A}, bytes_per_pixel(4) { }
 	TGAColor(const std::uint8_t *p, const std::uint8_t bytes_per_pixel) : bytes_per_pixel(bytes_per_pixel) {
@@ -61,8 +68,8 @@ public:
 	bool write_tga_file(const std::string filename, const bool vflip = true, const bool rle = true) const;
 	void flip_horizontally();
 	void flip_vertically();
-	TGAColor get(const int x, const int y) const;
-	void 	 set(const int x, const int y, const TGAColor& c);
+	color_t get(const int x, const int y) const;
+	void 	set(const int x, const int y, const color_t& c);
 	// nrows and ncols should be odd number
 	template<int nrows, int ncols> TGAImage convolute(const mat<nrows, ncols>& m);
 	int width() const;
@@ -95,7 +102,7 @@ inline TGAImage TGAImage::convolute(const mat<nrows, ncols> &m) {
 			if (!in_box(x, y))
 				ret.set(x, y, this->get(x, y));
 			else {
-				TGAColor tmp;
+				color_t tmp(0, 0, 0, 0);
 				for (int i = 0; i < ncols; ++i) {
 					for (int j = 0; j < nrows; ++j) {
 						vec2 pos(x + i - center.x, y + j - center.y);

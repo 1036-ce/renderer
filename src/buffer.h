@@ -50,4 +50,4 @@ template <typename T> inline T Buffer<T>::get_value(int x, int y) {
 }
 
 using DepthBuffer = Buffer<float>;
-using ColorBuffer = Buffer<TGAColor>;
+using ColorBuffer = Buffer<color_t>;
