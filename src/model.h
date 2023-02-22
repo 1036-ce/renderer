@@ -27,15 +27,10 @@ public:
 	int nverts() const;
 	int nfaces() const;
 	vec3 normal(const int iface, const int nthvert) const; 	// per triangle corner normal vertex
-	vec3 normal(const vec2 &uv) const; 						// fetch the normal from the normal map texture
 	vec3 vert(const int i) const;
 	vec3 vert(const int iface, const int nthvert) const;
 	vec2 uv(const int iface, const int nthvert) const;
-	color_t diffuse(const vec2& uv) const;
-	float specular(const vec2& uv) const;
 private:
-	// load texture	
-	void load_texture(const std::string filename, const std::string suffix, TGAImage& img);
 	void gen_normal();
 
 	bool gl_blend = false;
@@ -45,7 +40,4 @@ private:
 	std::vector<int> facet_vrt{};
 	std::vector<int> facet_tex{};	// per-triangle indices in the above arrays
 	std::vector<int> facet_nrm{};
-	TGAImage diffusemap{};			// diffuse color texture
-	TGAImage normalmap{};			// normal map texture
-	TGAImage specularmap{};			// specular map texture
 };

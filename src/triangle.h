@@ -14,7 +14,7 @@ using pack_t = vector<tuple<int, depth_t, std::optional<color_t>>>;
 class Triangle
 {
 public:
-	enum AA_Format { NOAA, MSAA4, MSAA8, SSAA4 };
+	enum AA_Format { NOAA = 1, MSAA4 = 4, MSAA8 = 8, MSAA16 = 16 };
 	void draw(IShader& shader, const mat4 & vp, DepthBuffer& zbuf, 
 			  ColorBuffer* color_buf, AA_Format aa_f = AA_Format::NOAA);
 	void enable(const uint32_t& feature);
@@ -34,7 +34,7 @@ private:
 	// vector<pair<int, TGAColor>> ssaa(int x, int y, int sample_num, IShader& shader);
 	pack_t noaa(int x, int y, int sample_num, IShader& shader);
 	pack_t msaa(int x, int y, int sample_num, IShader& shader);
-	pack_t ssaa(int x, int y, int sample_num, IShader& shader);
+	// pack_t ssaa(int x, int y, int sample_num, IShader& shader);
 
 	vec4 verts[3];	// vertexs of triangle in clip space
 	vec4 scoord[3];	// vertex of triangle in screen space

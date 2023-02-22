@@ -71,10 +71,10 @@ int main(int argc, char **argv) {
 
 	mat4 vp = viewport(0, 0, width, height);
 
-	ColorBuffer color_buf(width, height, color_t(0, 0, 0), 4);
-	DepthBuffer depth_buf(width, height, -std::numeric_limits<float>::max(), 4);
+	ColorBuffer color_buf(width, height, color_t(0, 0, 0), 16);
+	DepthBuffer depth_buf(width, height, -std::numeric_limits<float>::max(), 16);
 	// draw model
-	model->draw(shader, vp, depth_buf, &color_buf, Triangle::MSAA4);
+	model->draw(shader, vp, depth_buf, &color_buf, Triangle::MSAA16);
 	for (int x = 0; x < width; ++x) {
 		for (int y = 0; y < height; ++y) {
 			color_t c = color_buf.get_value(x, y);

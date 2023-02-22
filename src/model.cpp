@@ -79,19 +79,6 @@ Model::Model(const std::string filename) {
 	if (norms.size() == 0)
 		gen_normal();
 	in.close();
-	load_texture(filename, "_diffuse.tga", 	  diffusemap );
-	// load_texture(filename, "_nm.tga", normalmap  );		// here!
-	load_texture(filename, "_nm_tangent.tga", normalmap  );		// here!
-	load_texture(filename, "_spec.tga", 	  specularmap);
-	diffusemap.flip_vertically();
-	mat3 m1;
-	m1[0] = vec3(1, 1, 1);
-	m1[1] = vec3(1, 1, 1);
-	m1[2] = vec3(1, 1, 1);
-	m1 = (1.0 / 9) * m1;
-	diffusemap = diffusemap.convolute(m1);	// blur the diffuse map
-	normalmap.flip_vertically();
-	specularmap.flip_vertically();
 }
 
 void Model::draw(IShader &shader, const mat4 &vp, DepthBuffer &depth_buf, 
@@ -125,12 +112,6 @@ vec3 Model::normal(const int iface, const int nthvert) const {
 	return norms[facet_nrm[iface * 3 + nthvert]];
 }
 
-vec3 Model::normal(const vec2 &uv) const {
-	// TGAColor c = normalmap.get(uv.x * normalmap.width(), uv.y * normalmap.height());
-	// return vec3{(double)c[2], (double)c[1], (double)c[0]} * 2.0 / 255.0 - vec3{1, 1, 1};
-	color_t c = normalmap.get(uv.x * normalmap.width(), uv.y * normalmap.height());
-	return vec3(c.r, c.g, c.b) * 2.0 - vec3(1, 1, 1);
-}
 
 vec3 Model::vert(const int i) const {
 	return verts[i];
@@ -144,28 +125,7 @@ vec2 Model::uv(const int iface, const int nthvert) const {
 	return tex_coord[facet_tex[iface * 3 + nthvert]];
 }
 
-// TGAColor Model::diffuse(const vec2 &uv) const {
-	// return diffusemap.get(uv[0] * diffusemap.width(), uv[1] * diffusemap.height());
-// }
-
-color_t Model::diffuse(const vec2 &uv) const {
-	return diffusemap.get(uv.x * diffusemap.width(), uv.y * diffusemap.height());
-}
-
-float Model::specular(const vec2 &uv) const {
-	return specularmap.get(uv[0] * specularmap.width(), uv[1] * specularmap.height())[0] * 255;
-}
-
-void Model::load_texture(const std::string filename, const std::string suffix, TGAImage &img) {
-	size_t dot = filename.find_last_of('.');
-	if (dot == std::string::npos)
-		return;
-	std::string texfile = filename.substr(0, dot) + suffix;
-	std::cerr << "texture file" << texfile << " loading " << (img.read_tga_file(texfile) ? "ok" : "failed") << std::endl;
-}
-
 void Model::gen_normal() {
-	// facet_nrm.assign(nverts(), 0);
 	facet_nrm = facet_vrt;
 	norms.assign(nverts(), vec3(0, 0, 0));
 	vec3 pts[3];
