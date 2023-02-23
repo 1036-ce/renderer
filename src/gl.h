@@ -41,4 +41,30 @@ float radius(float angle);
 // return the area of the triangle
 float area(vec3 pts[3]);
 
-void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color);
+void line(int x0, int y0, int x1, int y1, TGAImage &image, color_t color);
+
+/**
+ * @brief compute relfect vector
+ * 
+ * @param n should be normalized
+ * @param in should be normalized
+ * @return vec3 
+ */
+vec3 reflect(const vec3& n, const vec3& in);
+
+/**
+ * @brief compute refract vector (may be not exist)
+ * 
+ * @param n should be normalized
+ * @param in should be normalized
+ * @return vec3 
+ */
+std::optional<vec3> refract(const vec3& N, const vec3& I, float etai, float etat);
+
+/**
+ * @brief compute fresnel equation
+ * 
+ * @return material's reflection ratio 
+ * (1 - @return) is material's refraction ratio
+ */
+float fresnel(const vec3& I, const vec3& N, float etai, float etat);

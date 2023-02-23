@@ -164,14 +164,6 @@ double dot(const vec3& v1, const vec3& v2);
 double dot(const vec4& v1, const vec4& v2);
 vec3 cross(const vec3& v1, const vec3& v2);
 
-/**
- * @brief compute relfect vector
- * 
- * @param n should be normalized
- * @param in should be normalized
- * @return vec3 
- */
-vec3 reflect(const vec3& n, const vec3& in);
 
 template<int n> struct dt;
 

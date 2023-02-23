@@ -128,3 +128,32 @@ void line(int x0, int y0, int x1, int y1, TGAImage &image, color_t color) {
 			image.set(x, y, color);
 	}
 }
+
+vec3 reflect(const vec3& n, const vec3& in) {
+	return ((-2 * n * in) * n + in).normalize();
+}
+
+std::optional<vec3> refract(const vec3& N, const vec3& I, float etai, float etat) {
+	float cosi = dot(I, N);
+	vec3 n = N;
+	if (cosi < 0) { cosi = -cosi; } else { n = -n; }
+	float ratio = etai / etat;
+	float k = 1 - ratio * ratio * (1 - cosi * cosi);
+	std::optional<vec3> ret;
+	if (k > 0)
+		return ret.emplace(ratio * I - (ratio * cosi - sqrtf(k)) * n);
+	else
+		return ret;
+}
+
+float fresnel(const vec3 &I, const vec3 &N, float etai, float etat) {
+	float cosi = dot(I, N);
+	float sint = etai / etat * sqrtf(1 - cosi * cosi);
+	if (sint >= 1)	// total internal reflection
+		return 1;
+	float cost = sqrtf(1 - sint * sint);
+	cosi = fabs(cosi);
+	float Rs = (etai * cosi - etat * cost) / (etai * cosi + etat * cost);
+	float Rp = (etai * cost - etat * cosi) / (etai * cost + etat * cosi);
+	return (Rs * Rs + Rp * Rp) * 0.5;
+}
